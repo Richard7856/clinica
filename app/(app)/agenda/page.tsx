@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import type FullCalendarType from "@fullcalendar/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -20,6 +21,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +80,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AgendaPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const calendarRef = useRef<FullCalendarType>(null);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Appointment | null>(null);
@@ -128,15 +131,37 @@ export default function AgendaPage() {
 
   const handleSaved = () => {
     setSheetOpen(false);
+    // Clear any lingering calendar selection that could block clicks
+    calendarRef.current?.getApi().unselect();
     qc.invalidateQueries({ queryKey: ["appointments"] });
+  };
+
+  const handleSheetChange = (open: boolean) => {
+    if (!open) calendarRef.current?.getApi().unselect();
+    setSheetOpen(open);
+  };
+
+  const openNewAppointment = () => {
+    setEditTarget(null);
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    const end = new Date(now.getTime() + 60 * 60 * 1000);
+    setPrefill({ startAt: now.toISOString(), endAt: end.toISOString() });
+    setSheetOpen(true);
   };
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Agenda</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Agenda</h1>
+        <Button onClick={openNewAppointment}>
+          <Plus className="h-4 w-4 mr-1" />Nueva cita
+        </Button>
+      </div>
 
       <div className="rounded-lg border bg-background overflow-hidden">
         <FullCalendar
+          ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           locale={esLocale}
           initialView="timeGridWeek"
@@ -151,6 +176,7 @@ export default function AgendaPage() {
           selectable
           selectMirror
           unselectAuto
+          selectMinDistance={5}
           events={events}
           select={handleDateSelect}
           eventClick={handleEventClick}
@@ -160,7 +186,7 @@ export default function AgendaPage() {
 
       <AppointmentSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChange={handleSheetChange}
         appointment={editTarget}
         prefill={prefill}
         patients={patients}

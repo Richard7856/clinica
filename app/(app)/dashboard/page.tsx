@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { CalendarDays, QrCode, TrendingUp, Users } from "lucide-react";
@@ -65,7 +66,6 @@ export default function DashboardPage() {
     .filter((p) => isToday(p.date))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  // Upcoming: not done, ordered by startAt
   const upcoming = todayApts
     .filter((a) => !["completed", "cancelled", "no_show"].includes(a.status))
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
@@ -89,32 +89,36 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI cards — clickeables, navegan a la sección relevante */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
+          href="/agenda"
           icon={<CalendarDays className="h-4 w-4 text-blue-500" />}
           label="Citas hoy"
           value={todayApts.length}
           sub={`${upcoming.length} pendientes`}
         />
         <KpiCard
+          href="/checkin"
           icon={<QrCode className="h-4 w-4 text-green-500" />}
           label="Check-ins hoy"
           value={checkins.length}
         />
         <KpiCard
+          href="/reports"
           icon={<TrendingUp className="h-4 w-4 text-orange-500" />}
           label="Ingresos hoy"
           value={`$${todayRevenue.toLocaleString("es-MX")}`}
         />
         <KpiCard
+          href="/patients"
           icon={<Users className="h-4 w-4 text-purple-500" />}
           label="Pacientes"
           value={patients.length}
         />
       </div>
 
-      {/* Upcoming appointments */}
+      {/* Citas pendientes hoy */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Citas pendientes hoy</CardTitle>
@@ -131,17 +135,13 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded"
+                    className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded transition-colors"
                     onClick={() => router.push("/agenda")}
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`h-2 w-2 rounded-full ${STATUS_COLOR[a.status] ?? "bg-gray-400"}`}
-                      />
+                      <div className={`h-2 w-2 rounded-full ${STATUS_COLOR[a.status] ?? "bg-gray-400"}`} />
                       <div>
-                        <p className="text-sm font-medium">
-                          {patient?.fullName ?? "—"}
-                        </p>
+                        <p className="text-sm font-medium">{patient?.fullName ?? "—"}</p>
                         <p className="text-xs text-muted-foreground">
                           {fmtTime(a.startAt)} → {fmtTime(a.endAt)}
                         </p>
@@ -162,26 +162,30 @@ export default function DashboardPage() {
 }
 
 function KpiCard({
+  href,
   icon,
   label,
   value,
   sub,
 }: {
+  href: string;
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="pt-4 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          {icon}
-          <span className="text-xs text-muted-foreground">{label}</span>
-        </div>
-        <p className="text-2xl font-semibold">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </CardContent>
-    </Card>
+    <Link href={href} className="block group">
+      <Card className="transition-shadow group-hover:shadow-md group-hover:ring-foreground/20 cursor-pointer">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-2 mb-1">
+            {icon}
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
+          <p className="text-2xl font-semibold">{value}</p>
+          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
