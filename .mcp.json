@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "firestore": {
+      "command": "./bin/toolbox",
+      "args": [
+        "--prebuilt",
+        "firestore",
+        "--stdio"
+      ],
+      "env": {
+        "FIRESTORE_PROJECT": "euromex-t2o27z",
+        "FIRESTORE_DATABASE": "(default)"
+      }
+    }
+  }
+}

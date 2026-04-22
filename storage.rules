@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() { return request.auth != null; }
+    function isStaff() {
+      return isSignedIn() && request.auth.token.role in ['admin', 'reception', 'therapist'];
+    }
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    function underLimit() {
+      // 8MB por archivo: suficiente para fotos antes/después y escaneos de historia.
+      return request.resource.size < 8 * 1024 * 1024;
+    }
+
+    // Fotos antes/después de sesiones.
+    match /sessions/{sessionId}/{file} {
+      allow read: if isStaff();
+      allow write: if isStaff() && isImage() && underLimit();
+    }
+
+    // Adjuntos del historial médico.
+    match /patients/{patientId}/history/{file} {
+      allow read: if isStaff();
+      allow write: if isStaff() && underLimit();
+    }
+
+    // Logo de la clínica (configuración).
+    match /settings/{file} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.token.role == 'admin' && isImage() && underLimit();
+    }
+
+    match /{all=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <!-- QR frame corners -->
+  <rect x="80"  y="80"  width="140" height="140" rx="12" fill="none" stroke="white" stroke-width="28"/>
+  <rect x="292" y="80"  width="140" height="140" rx="12" fill="none" stroke="white" stroke-width="28"/>
+  <rect x="80"  y="292" width="140" height="140" rx="12" fill="none" stroke="white" stroke-width="28"/>
+  <!-- Inner squares -->
+  <rect x="116" y="116" width="68" height="68" rx="6" fill="white"/>
+  <rect x="328" y="116" width="68" height="68" rx="6" fill="white"/>
+  <rect x="116" y="328" width="68" height="68" rx="6" fill="white"/>
+  <!-- Dot pattern (simplified) -->
+  <rect x="292" y="292" width="32" height="32" rx="4" fill="white"/>
+  <rect x="340" y="292" width="32" height="32" rx="4" fill="white"/>
+  <rect x="388" y="292" width="32" height="32" rx="4" fill="white"/>
+  <rect x="292" y="340" width="32" height="32" rx="4" fill="white"/>
+  <rect x="388" y="340" width="32" height="32" rx="4" fill="white"/>
+  <rect x="292" y="388" width="32" height="32" rx="4" fill="white"/>
+  <rect x="340" y="388" width="32" height="32" rx="4" fill="white"/>
+  <rect x="388" y="388" width="32" height="32" rx="4" fill="white"/>
+</svg>

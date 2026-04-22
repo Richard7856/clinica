@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helpers de rol. El rol se propaga a custom claims al crear/editar
+    // el doc de staff desde el admin (server action), así queda accesible
+    // tanto en el ID token como en /staff/{uid}.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return request.auth.token.role;
+    }
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+    function isReception() {
+      return isSignedIn() && role() == 'reception';
+    }
+    function isTherapist() {
+      return isSignedIn() && role() == 'therapist';
+    }
+    function isStaff() {
+      return isAdmin() || isReception() || isTherapist();
+    }
+
+    // Pacientes: staff puede leer; recepción y admin pueden escribir.
+    match /patients/{patientId} {
+      allow read: if isStaff();
+      allow create, update: if isAdmin() || isReception();
+      allow delete: if isAdmin();
+
+      // Historial médico: terapeutas pueden agregar entradas; admin edita/borra.
+      match /history/{entryId} {
+        allow read: if isStaff();
+        allow create: if isStaff();
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Catálogos: todos leen, solo admin edita.
+    match /treatments/{id}  { allow read: if isStaff(); allow write: if isAdmin(); }
+    match /cabins/{id}      { allow read: if isStaff(); allow write: if isAdmin(); }
+    match /devices/{id}     { allow read: if isStaff(); allow write: if isAdmin(); }
+
+    // Paquetes: recepción los vende, todo el staff los lee.
+    match /packages/{id} {
+      allow read: if isStaff();
+      allow create, update: if isAdmin() || isReception();
+      allow delete: if isAdmin();
+    }
+
+    // Sesiones: terapeuta las registra. Sólo admin borra.
+    match /sessions/{id} {
+      allow read: if isStaff();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // Agenda: recepción administra, todos leen.
+    match /appointments/{id} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin() || isReception();
+    }
+
+    // Check-ins: cualquier staff puede crearlos (escaneo en recepción o móvil).
+    match /checkins/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff();
+      allow update, delete: if isAdmin();
+    }
+
+    // Pagos y recompensas: información financiera sensible, solo admin + recepción.
+    match /payments/{id} {
+      allow read, create, update: if isAdmin() || isReception();
+      allow delete: if isAdmin();
+    }
+    match /rewards/{id} {
+      allow read: if isStaff();
+      allow create, update: if isAdmin() || isReception();
+      allow delete: if isAdmin();
+    }
+
+    // Staff: cada usuario lee su propio doc; sólo admin lista/edita.
+    match /staff/{uid} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Settings: todos leen, sólo admin escribe.
+    match /settings/{id} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
