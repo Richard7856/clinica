@@ -25,10 +25,12 @@ export const checkinsRepo: CheckinsRepository = {
   remove: (id) => removeDoc(COL, id),
 
   async listByDay(dayIso) {
-    const start = new Date(dayIso);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
+    // dayIso es YYYY-MM-DD; construimos el rango en hora LOCAL (no UTC).
+    // `new Date("2026-06-25")` se interpreta como medianoche UTC y desplazaba
+    // el rango medio día en México (UTC-6).
+    const [y, m, d] = dayIso.split("-").map(Number);
+    const start = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const end = new Date(y, m - 1, d, 23, 59, 59, 999);
     const snap = await getDocs(
       query(
         col(COL),

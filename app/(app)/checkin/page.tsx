@@ -12,9 +12,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ScanLine, CheckCircle2, Camera, ChevronRight, Zap } from "lucide-react";
+import Link from "next/link";
+import { ScanLine, CheckCircle2, Camera, ChevronRight, Zap, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   checkinsRepo,
@@ -59,10 +60,20 @@ const NEXT_ACTION: Partial<Record<AppointmentStatus, { label: string; next: Appo
 
 type ScanState = "scanning" | "found" | "no_camera";
 
+// Fecha local (YYYY-MM-DD) en la zona del navegador, no UTC. Comparar en UTC
+// hacía que las citas de la tarde/noche en México (UTC-6) cayeran al día UTC
+// siguiente y no se detectaran como "de hoy".
+function localDayStr(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function CheckinPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDayStr();
 
   const lastSlugRef = useRef("");
   const lastScanAtRef = useRef(0);
@@ -191,7 +202,7 @@ export default function CheckinPage() {
         .filter(
           (a) =>
             a.patientId === patient.id &&
-            a.startAt.slice(0, 10) === today &&
+            localDayStr(new Date(a.startAt)) === today &&
             !["completed", "cancelled", "no_show"].includes(a.status),
         )
         .sort(
@@ -297,7 +308,7 @@ export default function CheckinPage() {
             <div className="space-y-3">
               {/* Patient card */}
               <Card>
-                <CardContent className="pt-4 pb-4">
+                <CardContent className="pt-4 pb-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold">{foundPatient.fullName}</p>
@@ -307,6 +318,13 @@ export default function CheckinPage() {
                     </div>
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   </div>
+                  <Link
+                    href={`/patients/${foundPatient.id}`}
+                    className={buttonVariants({ variant: "outline", size: "sm", className: "w-full" })}
+                  >
+                    <User className="h-4 w-4 mr-1" />
+                    Ver ficha del paciente
+                  </Link>
                 </CardContent>
               </Card>
 

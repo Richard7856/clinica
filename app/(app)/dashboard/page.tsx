@@ -32,15 +32,24 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled: "bg-gray-200",
 };
 
+// Fecha local (YYYY-MM-DD) en la zona del navegador (no UTC). Comparar en UTC
+// rompía con citas de la tarde/noche en México (UTC-6), que caen al día UTC
+// siguiente y "desaparecían" de hoy.
+function localDayStr(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function isToday(iso: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  return iso.slice(0, 10) === today;
+  return localDayStr(new Date(iso)) === localDayStr();
 }
 
 export default function DashboardPage() {
   const { staff } = useAuth();
   const router = useRouter();
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = localDayStr();
 
   const { data: appointments = [] } = useQuery({
     queryKey: ["appointments"],
