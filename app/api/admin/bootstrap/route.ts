@@ -14,6 +14,24 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
+// GET (con CRON_SECRET): lista el staff existente para diagnosticar la cuenta
+// "perdida". Solo devuelve email/rol/uid, sin datos sensibles.
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  const auth = req.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return Response.json({ error: "no autorizado" }, { status: 401 });
+  }
+  const snap = await getAdminDb().collection("staff").get();
+  const staff = snap.docs.map((d) => ({
+    uid: d.id,
+    email: d.data().email ?? null,
+    role: d.data().role ?? null,
+    active: d.data().active ?? null,
+  }));
+  return Response.json({ count: staff.length, staff });
+}
+
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
@@ -23,16 +41,12 @@ export async function POST(req: NextRequest) {
 
   const db = getAdminDb();
 
-  // Gate: solo si no hay staff todavía.
-  const existing = await db.collection("staff").limit(1).get();
-  if (!existing.empty) {
-    return Response.json(
-      { error: "ya existe al menos un usuario; bootstrap deshabilitado" },
-      { status: 409 },
-    );
-  }
-
-  let body: { email?: string; password?: string; fullName?: string };
+  let body: {
+    action?: string;
+    email?: string;
+    password?: string;
+    fullName?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -50,6 +64,36 @@ export async function POST(req: NextRequest) {
       { error: "la contraseña debe tener al menos 6 caracteres" },
       { status: 400 },
     );
+
+  // action="reset": recupera una cuenta existente (la "perdida"). Resetea su
+  // contraseña y le asegura rol admin + doc staff. Protegido por CRON_SECRET.
+  if (body.action === "reset") {
+    try {
+      const adminAuth = getAdminAuth();
+      const u = await adminAuth.getUserByEmail(email);
+      await adminAuth.updateUser(u.uid, { password });
+      await adminAuth.setCustomUserClaims(u.uid, { role: "admin" });
+      await db.collection("staff").doc(u.uid).set(
+        { fullName, email, role: "admin", active: true, updatedAt: new Date() },
+        { merge: true },
+      );
+      return Response.json({ ok: true, uid: u.uid, email, role: "admin", reset: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "error";
+      if (msg.includes("user-not-found"))
+        return Response.json({ error: "no existe una cuenta con ese email" }, { status: 404 });
+      return Response.json({ error: msg }, { status: 500 });
+    }
+  }
+
+  // Gate del create: solo si no hay staff todavía.
+  const existing = await db.collection("staff").limit(1).get();
+  if (!existing.empty) {
+    return Response.json(
+      { error: "ya existe al menos un usuario; usa action:reset para recuperar" },
+      { status: 409 },
+    );
+  }
 
   try {
     const adminAuth = getAdminAuth();
