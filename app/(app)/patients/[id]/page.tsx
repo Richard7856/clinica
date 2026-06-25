@@ -65,7 +65,7 @@ export default function PatientDetailPage({
       </div>
 
       <Tabs defaultValue="info">
-        <TabsList>
+        <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="info"><ClipboardList className="h-3.5 w-3.5 mr-1" />Info</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
           <TabsTrigger value="paquetes"><Package className="h-3.5 w-3.5 mr-1" />Paquetes</TabsTrigger>

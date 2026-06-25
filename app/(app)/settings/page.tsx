@@ -557,7 +557,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Configuración</h1>
       <Tabs defaultValue="clinic">
-        <TabsList>
+        <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="clinic">Clínica</TabsTrigger>
           <TabsTrigger value="treatments">Tratamientos</TabsTrigger>
           <TabsTrigger value="cabins">Cabinas</TabsTrigger>

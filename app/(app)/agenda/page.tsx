@@ -86,6 +86,17 @@ export default function AgendaPage() {
   const [editTarget, setEditTarget] = useState<Appointment | null>(null);
   const [prefill, setPrefill] = useState<{ startAt: string; endAt: string } | null>(null);
 
+  // En móvil el calendario semanal de FullCalendar no cabe → arranca en vista
+  // de día con un header compacto.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const { data: appointments = [] } = useQuery({
     queryKey: ["appointments"],
     queryFn: () => appointmentsRepo.list(),
@@ -161,15 +172,20 @@ export default function AgendaPage() {
 
       <div className="rounded-lg border bg-background overflow-hidden">
         <FullCalendar
+          key={isMobile ? "mobile" : "desktop"}
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           locale={esLocale}
-          initialView="timeGridWeek"
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
-          }}
+          initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
+          headerToolbar={
+            isMobile
+              ? { left: "prev,next", center: "title", right: "today" }
+              : {
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                }
+          }
           slotMinTime="07:00:00"
           slotMaxTime="21:00:00"
           allDaySlot={false}

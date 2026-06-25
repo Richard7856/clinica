@@ -267,10 +267,10 @@ export default function CheckinPage() {
         <div className="space-y-4">
 
           {scanState === "scanning" && (
-            <div className="relative rounded-xl overflow-hidden bg-black aspect-square max-w-sm mx-auto md:mx-0">
+            <div className="relative rounded-xl overflow-hidden bg-black aspect-square w-full max-w-[min(100%,24rem)] mx-auto md:mx-0">
               <div id="qr-video" className="w-full h-full [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-56 h-56 relative">
+                <div className="w-[60%] aspect-square relative">
                   <span className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-md" />
                   <span className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-md" />
                   <span className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-md" />
@@ -282,7 +282,7 @@ export default function CheckinPage() {
           )}
 
           {scanState === "no_camera" && (
-            <div className="rounded-xl bg-gray-900 aspect-square max-w-sm mx-auto md:mx-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <div className="rounded-xl bg-gray-900 aspect-square w-full max-w-[min(100%,24rem)] mx-auto md:mx-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <Camera className="h-10 w-10 text-gray-400" />
               <p className="text-gray-300 text-sm">No se pudo acceder a la cámara.</p>
               <p className="text-gray-500 text-xs">Verifica permisos y que uses HTTPS.</p>
