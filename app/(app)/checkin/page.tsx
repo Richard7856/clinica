@@ -25,6 +25,7 @@ import {
   treatmentsRepo,
 } from "@/lib/repositories";
 import { useAuth } from "@/components/auth-context";
+import { sendVisitSummaryEmail } from "@/app/actions/emails";
 import type { Patient } from "@/lib/schemas/patient";
 import type { Appointment, AppointmentStatus } from "@/lib/schemas/appointment";
 import type { Device } from "@/lib/schemas/catalog";
@@ -146,6 +147,15 @@ export default function CheckinPage() {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["checkins", today] });
       qc.invalidateQueries({ queryKey: ["sessions", appointment.patientId] });
+
+      // Al completar: correo de resumen al paciente (puntos + sesiones
+      // restantes). Efecto secundario; relee datos reales server-side.
+      if (nextStatus === "completed") {
+        sendVisitSummaryEmail({
+          patientId: appointment.patientId,
+          treatmentId: appointment.treatmentId,
+        }).catch(() => {});
+      }
 
       // Update local state so the card reflects new status immediately
       setFoundAppointment((prev) =>

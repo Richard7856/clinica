@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { paymentsRepo, patientsRepo } from "@/lib/repositories";
+import { paymentsRepo, patientsRepo, settingsRepo, rewardsRepo } from "@/lib/repositories";
 import { useAuth } from "@/components/auth-context";
 
 const METHOD_LABEL: Record<string, string> = {
@@ -62,8 +62,8 @@ export default function NewPaymentPage() {
   const amount = watch("amount");
 
   const { mutate: save } = useMutation({
-    mutationFn: (data: FormValues) =>
-      paymentsRepo.create({
+    mutationFn: async (data: FormValues) => {
+      const payment = await paymentsRepo.create({
         patientId: data.patientId,
         amount: data.amount,
         method: data.method,
@@ -71,9 +71,27 @@ export default function NewPaymentPage() {
         date: new Date().toISOString(),
         receivedBy: user!.uid,
         notes: data.notes,
-      }),
-    onSuccess: () => {
-      toast.success("Pago registrado");
+      });
+
+      // Puntos automáticos: pointsRate (puntos por unidad monetaria) en
+      // settings. Si es 0 o no hay config, no se otorgan puntos.
+      const settings = await settingsRepo.get();
+      const rate = settings?.pointsRate ?? 0;
+      const earned = Math.floor(data.amount * rate);
+      if (earned > 0) {
+        await rewardsRepo.earn(
+          data.patientId,
+          earned,
+          `Compra: ${CONCEPT_LABEL[data.concept]}`,
+          payment.id,
+        );
+      }
+      return { earned };
+    },
+    onSuccess: ({ earned }) => {
+      toast.success(
+        earned > 0 ? `Pago registrado · +${earned} puntos` : "Pago registrado",
+      );
       router.push("/dashboard");
     },
     onError: (err) => {

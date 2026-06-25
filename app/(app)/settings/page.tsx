@@ -16,7 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { settingsRepo, treatmentsRepo, cabinsRepo, staffRepo } from "@/lib/repositories";
 import type { Treatment, Cabin } from "@/lib/schemas/catalog";
-import type { Staff } from "@/lib/schemas/staff";
+import type { Staff, StaffRole } from "@/lib/schemas/staff";
+import { useAuth } from "@/components/auth-context";
+import { setStaffRole, createStaffUser } from "@/app/actions/staff";
 
 // ─── Clinic config ────────────────────────────────────────────────────────────
 
@@ -398,8 +400,14 @@ const ROLE_LABEL: Record<string, string> = { admin: "Admin", reception: "Recepci
 
 function StaffTab() {
   const qc = useQueryClient();
-  const [newUid, setNewUid] = useState("");
+  const { user } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    role: "reception" as StaffRole,
+  });
 
   const { data: staffList = [], isLoading } = useQuery({
     queryKey: ["staff"],
@@ -413,32 +421,47 @@ function StaffTab() {
     onError: () => toast.error("Error al actualizar"),
   });
 
+  // Cambiar rol vía server action: setea el custom claim (que consume
+  // firestore.rules) además del doc /staff. Requiere ID token del admin.
   const { mutate: changeRole } = useMutation({
-    mutationFn: ({ uid, role }: { uid: string; role: "admin" | "reception" | "therapist" }) =>
-      staffRepo.update(uid, { role }),
+    mutationFn: async ({ uid, role }: { uid: string; role: StaffRole }) => {
+      const idToken = await user?.getIdToken();
+      const res = await setStaffRole({ idToken: idToken ?? "", targetUid: uid, role });
+      if (!res.ok) throw new Error(res.error);
+    },
     onSuccess: () => {
       toast.success("Rol actualizado — el usuario debe volver a iniciar sesión");
       qc.invalidateQueries({ queryKey: ["staff"] });
     },
-    onError: () => toast.error("Error al actualizar"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Error al actualizar"),
   });
 
+  // Crear usuario completo (Auth + claim + doc) desde el panel.
   const { mutate: addStaff, isPending: isAdding } = useMutation({
-    mutationFn: () =>
-      staffRepo.upsert(newUid.trim(), {
-        fullName: "Nuevo usuario",
-        email: "",
-        role: "reception",
-        active: true,
-      }),
+    mutationFn: async () => {
+      const idToken = await user?.getIdToken();
+      const res = await createStaffUser({
+        idToken: idToken ?? "",
+        email: form.email.trim(),
+        password: form.password,
+        fullName: form.fullName.trim(),
+        role: form.role,
+      });
+      if (!res.ok) throw new Error(res.error);
+    },
     onSuccess: () => {
-      toast.success("Usuario agregado — edita nombre y email en Firestore Console");
+      toast.success("Usuario creado");
       qc.invalidateQueries({ queryKey: ["staff"] });
-      setNewUid("");
+      setForm({ fullName: "", email: "", password: "", role: "reception" });
       setShowAdd(false);
     },
-    onError: () => toast.error("UID no válido o ya existe"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "No se pudo crear"),
   });
+
+  const canSubmit =
+    form.fullName.trim().length >= 2 &&
+    form.email.includes("@") &&
+    form.password.length >= 6;
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando…</p>;
 
@@ -447,7 +470,7 @@ function StaffTab() {
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{staffList.length} usuarios</p>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="h-4 w-4 mr-1" />Agregar por UID
+          <Plus className="h-4 w-4 mr-1" />Agregar usuario
         </Button>
       </div>
 
@@ -455,23 +478,41 @@ function StaffTab() {
         <Card>
           <CardContent className="pt-4 space-y-3">
             <p className="text-xs text-muted-foreground">
-              Crea el usuario en{" "}
-              <strong>Firebase Console → Authentication</strong>, copia el UID
-              generado y pégalo aquí.
+              Se crea la cuenta de acceso, el rol y el perfil en un paso.
             </p>
-            <div className="flex gap-2">
+            <div className="grid gap-2">
               <Input
-                placeholder="UID de Firebase Auth"
-                value={newUid}
-                onChange={(e) => setNewUid(e.target.value)}
-                className="font-mono text-xs"
+                placeholder="Nombre completo"
+                value={form.fullName}
+                onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
               />
-              <Button size="sm" disabled={!newUid.trim() || isAdding} onClick={() => addStaff()}>
-                Agregar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              />
+              <Input
+                type="password"
+                placeholder="Contraseña (mín. 6 caracteres)"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              />
+              <select
+                value={form.role}
+                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as StaffRole }))}
+                className="h-8 rounded-md border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring"
+              >
+                {Object.entries(ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <Button size="sm" disabled={!canSubmit || isAdding} onClick={() => addStaff()}>
+                  {isAdding ? "Creando…" : "Crear usuario"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -487,7 +528,7 @@ function StaffTab() {
             <div className="flex items-center gap-2 shrink-0">
               <select
                 value={s.role}
-                onChange={(e) => changeRole({ uid: s.id, role: e.target.value as "admin" | "reception" | "therapist" })}
+                onChange={(e) => changeRole({ uid: s.id, role: e.target.value as StaffRole })}
                 className="h-7 rounded-md border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring"
               >
                 {Object.entries(ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}

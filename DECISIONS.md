@@ -103,3 +103,48 @@ Query maneja cache con `staleTime: 30s`.
 **Riesgos / limitaciones:**
 - Queries Firestore que filtran por fecha necesitan convertir ISO → Date →
   Timestamp en el punto de uso. Está centralizado en los repos.
+
+---
+
+## [2026-06-25] Correos al paciente con Resend + server actions
+
+**Contexto:** La propuesta comercial promete que el paciente recibe por correo
+su QR, sus puntos y sus sesiones restantes, sin entrar nunca a la app. El MVP
+no tenía ningún mecanismo de email.
+
+**Decisión:** Resend integrado vía server actions (`app/actions/emails.ts`).
+Tres disparadores: bienvenida+QR (al alta), resumen post-visita (al completar
+sesión en check-in) y recordatorio (Vercel Cron diario → `/api/cron/reminders`).
+Las actions RELEEN los datos con el admin SDK antes de enviar: el contenido del
+correo refleja el estado real en Firestore, no lo que manda el cliente.
+
+**Alternativas consideradas:**
+- Extensión Firebase Trigger Email — menos código pero exige SMTP propio y
+  config en consola; menos versionable.
+- Make.com — desacopla edición de correos pero suma dependencia externa.
+
+**Riesgos / limitaciones:**
+- El envío es best-effort: si Resend falla, el flujo de negocio (crear
+  paciente, completar sesión) ya se completó. `sendEmail` nunca lanza.
+- El dominio remitente (`legalmind.com.mx`) debe verificarse en Resend (SPF /
+  DKIM / DMARC) para evitar spam. En pruebas se usa el dominio de Resend.
+- Puntos automáticos: al registrar un pago se otorgan según `pointsRate` de
+  settings (antes existía el campo pero no se usaba).
+
+---
+
+## [2026-06-25] Custom claims de rol vía server action
+
+**Contexto:** `firestore.rules` ya asumía `request.auth.token.role`, pero el
+claim nunca se seteaba (pendiente "Sprint 2"). La seguridad real dependía solo
+de las reglas sin que el claim existiera.
+
+**Decisión:** `app/actions/staff.ts` setea el custom claim con el admin SDK al
+asignar rol, y permite crear el usuario (Auth + claim + doc /staff) en un paso,
+reemplazando el flujo manual de copiar UID desde la consola. Cada action
+verifica el ID token del que llama y exige rol admin antes de actuar.
+
+**Riesgos / limitaciones:**
+- El cambio de rol requiere que el usuario refresque el token (re-login).
+- El primer admin necesita su claim seteado una vez (o el fallback al doc
+  /staff cubre el arranque).

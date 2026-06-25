@@ -68,6 +68,17 @@ flows through schemas → repositories → React Query → components.
   the authenticated shell (`(app)/layout.tsx` is the auth guard) containing
   `dashboard`, `patients`, `checkin`, `agenda`, `payments`, `reports`,
   `settings`.
+- `app/actions/` — **server actions** (`"use server"`). The only place the
+  Admin SDK runs. `emails.ts` re-reads authoritative data (points, remaining
+  sessions) before sending, so emails never trust client input; `staff.ts`
+  verifies the caller's ID token is an admin before setting custom claims /
+  creating users.
+- `app/api/cron/reminders/` — route handler invoked daily by Vercel Cron
+  (`vercel.json`), guarded by `CRON_SECRET`; emails next-day appointment
+  reminders.
+- `lib/email/` — Resend client (`client.ts`, fails soft if unconfigured),
+  server-side QR generation (`qr.ts`), and inline-styled Spanish templates
+  (`templates.ts`). Patients never log in — email is their only channel.
 - `components/` — `ui/` are shadcn primitives; `providers.tsx` wires
   QueryClient + AuthProvider + Toaster; `auth-context.tsx` holds global auth
   state; `app-nav.tsx` / `mobile-nav.tsx` render role-gated navigation.

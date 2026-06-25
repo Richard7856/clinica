@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { patientsRepo } from "@/lib/repositories";
 import { patientInputSchema, type PatientInput } from "@/lib/schemas/patient";
+import { sendWelcomeEmail } from "@/app/actions/emails";
 
 export default function NewPatientPage() {
   const router = useRouter();
@@ -29,6 +30,20 @@ export default function NewPatientPage() {
     try {
       const patient = await patientsRepo.create(data);
       toast.success("Paciente creado");
+
+      // Correo de bienvenida + QR (efecto secundario: no debe frenar el alta).
+      if (patient.email) {
+        sendWelcomeEmail(patient.id)
+          .then((res) => {
+            if (res.ok) toast.success("Correo de bienvenida enviado");
+            else if (!res.skipped)
+              toast.warning("Paciente creado, pero el correo no se envió");
+          })
+          .catch(() => {
+            toast.warning("Paciente creado, pero el correo no se envió");
+          });
+      }
+
       router.push(`/patients/${patient.id}`);
     } catch (err) {
       console.error("Error al crear paciente:", err);
