@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# native (generado por prebuild)
+/android
+/ios
+
+# env / secrets
+.env
+.env.local
+*.keystore
+!debug.keystore
+
+# misc
+*.log
+.DS_Store
