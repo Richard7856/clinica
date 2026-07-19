@@ -10,12 +10,16 @@ import {
 } from "react-native";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth";
+import { startCheckout } from "@/lib/checkout";
 import { colors, spacing, radius, font } from "@/theme";
 import type { Product } from "@/lib/types";
 
 export function ShopScreen() {
+  const { patient } = useAuth();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [buyingId, setBuyingId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -48,12 +52,27 @@ export function ShopScreen() {
     };
   }, []);
 
-  function onBuy(product: Product) {
-    // TODO: integración Stripe
-    Alert.alert(
-      "Compra",
-      "El pago con tarjeta estará disponible pronto (Stripe).",
-    );
+  async function onBuy(product: Product) {
+    if (!patient) {
+      Alert.alert(
+        "Sin ficha",
+        "No encontramos tu ficha en la clínica. Pide que registren tu correo para comprar y ganar Cisnes.",
+      );
+      return;
+    }
+    setBuyingId(product.id);
+    try {
+      await startCheckout(product, patient.id);
+      // Al volver del navegador, refrescamos precios/estado; los Cisnes se
+      // suman server-side vía webhook y se reflejan al recargar Inicio.
+    } catch (e) {
+      Alert.alert(
+        "No se pudo iniciar el pago",
+        e instanceof Error ? e.message : "Intenta de nuevo.",
+      );
+    } finally {
+      setBuyingId(null);
+    }
   }
 
   function renderItem({ item }: { item: Product }) {
@@ -62,6 +81,7 @@ export function ShopScreen() {
       typeof item.sessions === "number"
         ? `${item.sessions} ${item.sessions === 1 ? "sesión" : "sesiones"}`
         : item.description;
+    const busy = buyingId === item.id;
     return (
       <View style={styles.row}>
         {/* Placeholder de imagen hasta tener imageUrl real */}
@@ -77,10 +97,14 @@ export function ShopScreen() {
             ${item.price.toLocaleString("es-MX")}
           </Text>
           <Pressable
-            style={({ pressed }) => [styles.buyBtn, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [
+              styles.buyBtn,
+              (pressed || busy) && { opacity: 0.6 },
+            ]}
             onPress={() => onBuy(item)}
+            disabled={busy}
           >
-            <Text style={styles.buyText}>Comprar</Text>
+            <Text style={styles.buyText}>{busy ? "Abriendo…" : "Comprar"}</Text>
           </Pressable>
         </View>
       </View>
