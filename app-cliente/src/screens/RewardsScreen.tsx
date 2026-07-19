@@ -11,16 +11,18 @@ import {
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
+import { redeemReward } from "@/lib/rewards";
 import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font } from "@/theme";
 import type { RewardItem } from "@/lib/types";
 
 export function RewardsScreen() {
-  const { patient } = useAuth();
+  const { patient, refreshPatient } = useAuth();
   const points = patient?.points ?? 0;
 
   const [items, setItems] = useState<RewardItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -53,12 +55,47 @@ export function RewardsScreen() {
   }, []);
 
   function onRedeem(item: RewardItem) {
-    // TODO: transacción de canje contra Firestore
-    Alert.alert("Canje", "Función disponible próximamente");
+    if (!patient) {
+      Alert.alert(
+        "Sin ficha",
+        "No encontramos tu ficha en la clínica. Pide que registren tu correo.",
+      );
+      return;
+    }
+    Alert.alert(
+      "Canjear recompensa",
+      `¿Canjear "${item.title}" por ${item.cost} Cisnes?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Canjear",
+          style: "default",
+          onPress: async () => {
+            setRedeemingId(item.id);
+            try {
+              const { code } = await redeemReward(patient.id, item);
+              await refreshPatient();
+              Alert.alert(
+                "¡Canjeado!",
+                `Muestra este código en recepción para reclamar tu recompensa:\n\n${code}`,
+              );
+            } catch (e) {
+              Alert.alert(
+                "No se pudo canjear",
+                e instanceof Error ? e.message : "Intenta de nuevo.",
+              );
+            } finally {
+              setRedeemingId(null);
+            }
+          },
+        },
+      ],
+    );
   }
 
   function renderItem({ item }: { item: RewardItem }) {
     const canRedeem = points >= item.cost;
+    const busy = redeemingId === item.id;
     return (
       <View style={styles.card}>
         {/* Placeholder de imagen hasta tener imageUrl real */}
@@ -77,14 +114,16 @@ export function RewardsScreen() {
               pressed && canRedeem && { opacity: 0.9 },
             ]}
             onPress={() => onRedeem(item)}
-            disabled={!canRedeem}
+            disabled={!canRedeem || busy}
           >
             <Text
               style={canRedeem ? styles.redeemText : styles.redeemTextDisabled}
             >
-              {canRedeem
-                ? "Canjear recompensa"
-                : `Te faltan ${item.cost - points} Cisnes`}
+              {busy
+                ? "Canjeando…"
+                : canRedeem
+                  ? "Canjear recompensa"
+                  : `Te faltan ${item.cost - points} Cisnes`}
             </Text>
           </Pressable>
         </View>
