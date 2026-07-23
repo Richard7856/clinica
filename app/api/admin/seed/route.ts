@@ -269,6 +269,63 @@ export async function POST(req: NextRequest) {
   // Saldo final = 3500 + 600 - 1000 = 3100
   await db.collection("patients").doc(patientId).update({ points: 3100 });
 
+  // ── 8. Catálogos de la app cliente (recompensas canjeables, productos, promos)
+  // Recompensas canjeables por Cisnes
+  await ensure("rewardItems", "title", "Facial de limpieza profunda", {
+    title: "Facial de limpieza profunda",
+    description: "Hidratación e higiene facial completa en cabina.",
+    cost: 40,
+    active: true,
+  });
+  await ensure("rewardItems", "title", "2×1 Criolipólisis", {
+    title: "2×1 Criolipólisis",
+    description: "Congelamos tu grasa en sesiones de 30 minutos.",
+    cost: 500,
+    active: true,
+  });
+  await ensure("rewardItems", "title", "2×1 Botox", {
+    title: "2×1 Botox",
+    description: "Trae a tu amiga y disfruten su tratamiento juntas.",
+    cost: 550,
+    active: true,
+  });
+
+  // Productos/servicios comprables
+  await ensure("products", "name", "Depilación láser — Paquete 5 sesiones", {
+    name: "Depilación láser — Paquete 5 sesiones",
+    description: "Piernas completas",
+    price: 3500,
+    sessions: 5,
+    active: true,
+  });
+  await ensure("products", "name", "Limpieza facial", {
+    name: "Limpieza facial",
+    description: "Sesión individual · 45 min",
+    price: 600,
+    active: true,
+  });
+  await ensure("products", "name", "Radiofrecuencia — Paquete 3 sesiones", {
+    name: "Radiofrecuencia — Paquete 3 sesiones",
+    description: "Abdomen",
+    price: 3300,
+    sessions: 3,
+    active: true,
+  });
+
+  // Promociones activas
+  await ensure("promotions", "title", "Facial de limpieza GRATIS", {
+    title: "Facial de limpieza GRATIS",
+    description: "En tu próxima visita al comprar cualquier paquete.",
+    badge: "GRATIS",
+    active: true,
+  });
+  await ensure("promotions", "title", "2×1 en Botox", {
+    title: "2×1 en Botox",
+    description: "Trae a una amiga este mes y paguen solo uno.",
+    badge: "2x1",
+    active: true,
+  });
+
   return Response.json({
     ok: true,
     patientId,
@@ -284,6 +341,9 @@ export async function POST(req: NextRequest) {
       citasHoy: 2,
       pagos: 2,
       puntos: 3100,
+      rewardItems: 3,
+      products: 3,
+      promotions: 2,
     },
   });
 }

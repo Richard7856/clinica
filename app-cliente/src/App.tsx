@@ -6,11 +6,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { Tabs } from "@/navigation/Tabs";
+import { AdminTabs } from "@/navigation/AdminTabs";
 import { colors } from "@/theme";
 
-// Decide entre login y app según el estado de auth.
+// Decide entre login, panel de cliente y panel de admin según el rol.
 function Root() {
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
   if (loading) {
     return (
@@ -20,7 +21,8 @@ function Root() {
     );
   }
 
-  return user ? <Tabs /> : <LoginScreen />;
+  if (!user) return <LoginScreen />;
+  return role === "admin" ? <AdminTabs /> : <Tabs />;
 }
 
 export default function App() {

@@ -18,9 +18,19 @@ import {
   where,
   limit,
   getDocs,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { Patient } from "./types";
+
+export type Role = "admin" | "client";
+
+export interface StaffInfo {
+  uid: string;
+  fullName: string;
+  role: string; // admin / reception / therapist
+}
 
 // Contexto de autenticación del CLIENTE.
 //
@@ -36,6 +46,8 @@ import type { Patient } from "./types";
 
 interface AuthState {
   user: User | null;
+  role: Role; // "admin" si el usuario es staff de la clínica, si no "client"
+  staff: StaffInfo | null;
   patient: Patient | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -67,8 +79,26 @@ async function findPatientByEmail(email: string): Promise<Patient | null> {
   };
 }
 
+// Determina si el usuario es staff de la clínica leyendo /staff/{uid}.
+async function findStaff(u: User): Promise<StaffInfo | null> {
+  try {
+    const snap = await getDoc(doc(db, "staff", u.uid));
+    if (!snap.exists()) return null;
+    const d = snap.data();
+    if (d.active === false) return null;
+    return {
+      uid: u.uid,
+      fullName: (d.fullName as string) ?? "",
+      role: (d.role as string) ?? "reception",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +117,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      await loadPatient(u);
+      if (u) {
+        // Primero: ¿es staff? Si sí, es admin. Si no, cargamos su ficha.
+        const s = await findStaff(u);
+        setStaff(s);
+        if (s) setPatient(null);
+        else await loadPatient(u);
+      } else {
+        setStaff(null);
+        setPatient(null);
+      }
       setLoading(false);
     });
     return unsub;
@@ -95,6 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthState = {
     user,
+    role: staff ? "admin" : "client",
+    staff,
     patient,
     loading,
     signIn: async (email, password) => {

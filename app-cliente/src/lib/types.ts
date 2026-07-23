@@ -50,3 +50,33 @@ export interface ClinicInfo {
   phone?: string;
   pointsLabel?: string; // "Cisnes" / "Estampas" / "Puntos"
 }
+
+// Promoción / oferta mostrada al cliente y administrada desde el panel admin.
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  badge?: string; // etiqueta corta, ej. "2x1", "GRATIS"
+  active: boolean;
+  createdAt?: string;
+}
+
+// Aparato / equipo (misma colección `devices` de la clínica).
+export interface Device {
+  id: string;
+  name: string;
+  type?: string;
+  cabinId?: string;
+  status: "active" | "maintenance" | "disabled";
+}
+
+// Cita (misma colección `appointments`).
+export interface Appointment {
+  id: string;
+  patientId: string;
+  treatmentId: string;
+  cabinId: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+}

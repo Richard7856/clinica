@@ -18,7 +18,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font } from "@/theme";
-import type { Reward } from "@/lib/types";
+import type { Reward, Promotion } from "@/lib/types";
 
 // Umbral de la "próxima recompensa" — meta visual de la barra de progreso.
 // TODO: leer del catálogo de recompensas (la más barata que aún no alcanza).
@@ -27,6 +27,7 @@ const NEXT_GOAL = 80;
 export function HomeScreen() {
   const { patient, refreshPatient } = useAuth();
   const [activity, setActivity] = useState<Reward[]>([]);
+  const [promos, setPromos] = useState<Promotion[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const points = patient?.points ?? 0;
@@ -54,15 +55,29 @@ export function HomeScreen() {
     }
   }, [patient]);
 
+  const loadPromos = useCallback(async () => {
+    try {
+      const snap = await getDocs(
+        query(collection(db, "promotions"), where("active", "==", true)),
+      );
+      setPromos(
+        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Promotion, "id">) })),
+      );
+    } catch {
+      setPromos([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadActivity();
-  }, [loadActivity]);
+    loadPromos();
+  }, [loadActivity, loadPromos]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refreshPatient(), loadActivity()]);
+    await Promise.all([refreshPatient(), loadActivity(), loadPromos()]);
     setRefreshing(false);
-  }, [refreshPatient, loadActivity]);
+  }, [refreshPatient, loadActivity, loadPromos]);
 
   const pct = Math.min(100, Math.round((points / NEXT_GOAL) * 100));
 
@@ -107,6 +122,26 @@ export function HomeScreen() {
             correo para ver tus Cisnes e historial.
           </Text>
         </View>
+      )}
+
+      {/* Promociones activas (controladas desde el panel admin) */}
+      {promos.length > 0 && (
+        <>
+          <Text style={styles.sectionLbl}>PROMOCIONES</Text>
+          {promos.map((p) => (
+            <View key={p.id} style={styles.promo}>
+              {p.badge ? (
+                <View style={styles.promoBadge}>
+                  <Text style={styles.promoBadgeText}>{p.badge}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.promoTitle}>{p.title}</Text>
+              {p.description ? (
+                <Text style={styles.promoDesc}>{p.description}</Text>
+              ) : null}
+            </View>
+          ))}
+        </>
       )}
 
       {/* Actividad reciente */}
@@ -203,6 +238,28 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   empty: { color: colors.muted, fontSize: font.size.sm },
+  promo: {
+    backgroundColor: colors.rose,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  promoBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(122,74,64,0.15)",
+    borderRadius: radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginBottom: 6,
+  },
+  promoBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#7a4a40",
+    letterSpacing: 0.5,
+  },
+  promoTitle: { fontSize: font.size.lg, fontWeight: "600", color: "#4a2f28" },
+  promoDesc: { fontSize: font.size.sm, color: "#6b5049", marginTop: 3, lineHeight: 18 },
   actRow: {
     flexDirection: "row",
     alignItems: "center",

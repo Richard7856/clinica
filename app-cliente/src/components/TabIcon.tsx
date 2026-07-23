@@ -3,7 +3,14 @@ import Svg, { G, Path, Rect, Circle } from "react-native-svg";
 
 // Íconos de la barra inferior. `name` selecciona el glifo; color/size vienen
 // del navigator según el tab activo.
-export type TabName = "inicio" | "recompensas" | "comprar" | "ubicacion";
+export type TabName =
+  | "inicio"
+  | "recompensas"
+  | "comprar"
+  | "ubicacion"
+  | "promos"
+  | "aparatos"
+  | "citas";
 
 export function TabIcon({
   name,
@@ -46,6 +53,23 @@ export function TabIcon({
         <G {...stroke}>
           <Path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z" />
           <Circle cx={12} cy={10} r={2.5} />
+        </G>
+      )}
+      {name === "promos" && (
+        <G {...stroke}>
+          <Path d="M20.6 4.6a5 5 0 0 0-7 0L12 6l-1.6-1.4a5 5 0 0 0-7 7L12 20l8.6-8.4a5 5 0 0 0 0-7z" />
+        </G>
+      )}
+      {name === "aparatos" && (
+        <G {...stroke}>
+          <Rect x={4} y={4} width={16} height={16} rx={2} />
+          <Path d="M9 9h6v6H9zM4 10h1M4 14h1M19 10h1M19 14h1M10 4v1M14 4v1M10 19v1M14 19v1" />
+        </G>
+      )}
+      {name === "citas" && (
+        <G {...stroke}>
+          <Rect x={3} y={4} width={18} height={18} rx={2} />
+          <Path d="M3 10h18M8 2v4M16 2v4M8 15l2 2 4-4" />
         </G>
       )}
     </Svg>
