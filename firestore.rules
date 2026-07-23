@@ -3,11 +3,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helpers de rol. El rol se propaga a custom claims al crear/editar
-    // el doc de staff desde el admin (server action), así queda accesible
-    // tanto en el ID token como en /staff/{uid}.
+    // ── Helpers de rol (staff) ──────────────────────────────────────────────
+    // El rol se propaga a custom claims al crear/editar el doc de staff desde
+    // el admin (server action), así queda accesible en el ID token.
     function isSignedIn() {
       return request.auth != null;
+    }
+    function email() {
+      return request.auth.token.email;
     }
     function role() {
       return request.auth.token.role;
@@ -25,13 +28,27 @@ service cloud.firestore {
       return isAdmin() || isReception() || isTherapist();
     }
 
-    // Pacientes: staff puede leer; recepción y admin pueden escribir.
+    // ── Helpers de cliente (app móvil) ──────────────────────────────────────
+    // Los clientes NO son staff. Se ligan a su ficha por el correo del token.
+    // OJO (demo): permitir que el cliente escriba su propio doc/puntos es una
+    // simplificación para la demostración. En producción, otorgar/descontar
+    // puntos debería pasar por un backend de confianza (server action/Function).
+    function ownsPatientDoc() {
+      return isSignedIn() && resource.data.email == email();
+    }
+    function ownsPatient(pid) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/patients/$(pid)).data.email == email();
+    }
+
+    // ── Pacientes ───────────────────────────────────────────────────────────
     match /patients/{patientId} {
-      allow read: if isStaff();
-      allow create, update: if isAdmin() || isReception();
+      // Staff ve todo; el cliente ve/edita solo su propia ficha (match correo).
+      allow read: if isStaff() || ownsPatientDoc();
+      allow create: if isAdmin() || isReception();
+      allow update: if isAdmin() || isReception() || ownsPatientDoc();
       allow delete: if isAdmin();
 
-      // Historial médico: terapeutas pueden agregar entradas; admin edita/borra.
       match /history/{entryId} {
         allow read: if isStaff();
         allow create: if isStaff();
@@ -39,60 +56,92 @@ service cloud.firestore {
       }
     }
 
-    // Catálogos: todos leen, solo admin edita.
+    // ── Catálogos internos (solo staff) ─────────────────────────────────────
     match /treatments/{id}  { allow read: if isStaff(); allow write: if isAdmin(); }
     match /cabins/{id}      { allow read: if isStaff(); allow write: if isAdmin(); }
-    match /devices/{id}     { allow read: if isStaff(); allow write: if isAdmin(); }
+    // Aparatos: staff los administra (cambiar estado desde la app admin).
+    match /devices/{id}     { allow read: if isStaff(); allow write: if isStaff(); }
 
-    // Paquetes: recepción los vende, todo el staff los lee.
     match /packages/{id} {
       allow read: if isStaff();
       allow create, update: if isAdmin() || isReception();
       allow delete: if isAdmin();
     }
 
-    // Sesiones: terapeuta las registra. Sólo admin borra.
     match /sessions/{id} {
       allow read: if isStaff();
       allow create, update: if isStaff();
       allow delete: if isAdmin();
     }
 
-    // Agenda: recepción administra, todos leen.
     match /appointments/{id} {
       allow read: if isStaff();
       allow create, update, delete: if isAdmin() || isReception();
     }
 
-    // Check-ins: cualquier staff puede crearlos (escaneo en recepción o móvil).
     match /checkins/{id} {
       allow read: if isStaff();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
 
-    // Pagos y recompensas: información financiera sensible, solo admin + recepción.
-    match /payments/{id} {
-      allow read, create, update: if isAdmin() || isReception();
-      allow delete: if isAdmin();
+    // ── Catálogos públicos de la app cliente ────────────────────────────────
+    // Cualquier usuario autenticado los lee; solo el staff los administra.
+    match /promotions/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
     }
-    match /rewards/{id} {
-      allow read: if isStaff();
-      allow create, update: if isAdmin() || isReception();
+    match /rewardItems/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+    match /products/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // ── Pagos: financiero, solo staff lee. El cliente puede CREAR su propio
+    // pago (compra desde la app). ───────────────────────────────────────────
+    match /payments/{id} {
+      allow read: if isAdmin() || isReception();
+      allow create: if isAdmin() || isReception()
+                    || ownsPatient(request.resource.data.patientId);
+      allow update: if isAdmin() || isReception();
       allow delete: if isAdmin();
     }
 
-    // Staff: cada usuario lee su propio doc; sólo admin lista/edita.
+    // ── Movimientos de puntos: el cliente lee/crea los suyos ─────────────────
+    match /rewards/{id} {
+      allow read: if isStaff() || ownsPatient(resource.data.patientId);
+      allow create: if isStaff() || ownsPatient(request.resource.data.patientId);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Canjes: el cliente crea el suyo; el staff lo marca como honrado ──────
+    match /redemptions/{id} {
+      allow read: if isStaff() || ownsPatient(resource.data.patientId);
+      allow create: if isStaff() || ownsPatient(request.resource.data.patientId);
+      allow update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // ── Staff ────────────────────────────────────────────────────────────────
     match /staff/{uid} {
       allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
       allow list: if isAdmin();
       allow write: if isAdmin();
     }
 
-    // Settings: todos leen, sólo admin escribe.
+    // ── Settings: cualquier autenticado lee (nombre, horarios, pointsRate);
+    // solo admin escribe. ────────────────────────────────────────────────────
     match /settings/{id} {
-      allow read: if isStaff();
+      allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    // Solo Admin SDK (webhook idempotencia): denegado a clientes.
+    match /stripeEvents/{id} {
+      allow read, write: if false;
     }
 
     // Default deny.
