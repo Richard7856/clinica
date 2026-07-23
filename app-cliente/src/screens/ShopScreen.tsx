@@ -11,12 +11,12 @@ import {
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
-import { startCheckout } from "@/lib/checkout";
+import { simulatePurchase } from "@/lib/purchase";
 import { colors, spacing, radius, font } from "@/theme";
 import type { Product } from "@/lib/types";
 
 export function ShopScreen() {
-  const { patient } = useAuth();
+  const { patient, refreshPatient } = useAuth();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function ShopScreen() {
     };
   }, []);
 
-  async function onBuy(product: Product) {
+  function onBuy(product: Product) {
     if (!patient) {
       Alert.alert(
         "Sin ficha",
@@ -60,19 +60,37 @@ export function ShopScreen() {
       );
       return;
     }
-    setBuyingId(product.id);
-    try {
-      await startCheckout(product, patient.id);
-      // Al volver del navegador, refrescamos precios/estado; los Cisnes se
-      // suman server-side vía webhook y se reflejan al recargar Inicio.
-    } catch (e) {
-      Alert.alert(
-        "No se pudo iniciar el pago",
-        e instanceof Error ? e.message : "Intenta de nuevo.",
-      );
-    } finally {
-      setBuyingId(null);
-    }
+    // MODO DEMO: pago simulado (sin pasarela real).
+    Alert.alert(
+      "Compra de demostración",
+      `Simular el pago de "${product.name}" por $${product.price.toLocaleString("es-MX")}?\n\n(No se cobra nada — es una demostración.)`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Simular pago",
+          onPress: async () => {
+            setBuyingId(product.id);
+            try {
+              const { earned } = await simulatePurchase(product, patient.id);
+              await refreshPatient();
+              Alert.alert(
+                "¡Compra simulada!",
+                earned > 0
+                  ? `Listo (demo). Ganaste ${earned} Cisnes.`
+                  : "Listo (demo).",
+              );
+            } catch (e) {
+              Alert.alert(
+                "No se pudo completar",
+                e instanceof Error ? e.message : "Intenta de nuevo.",
+              );
+            } finally {
+              setBuyingId(null);
+            }
+          },
+        },
+      ],
+    );
   }
 
   function renderItem({ item }: { item: Product }) {
@@ -138,7 +156,7 @@ export function ShopScreen() {
         }
         ListFooterComponent={
           items.length > 0 ? (
-            <Text style={styles.footer}>Pago seguro con tarjeta · Stripe</Text>
+            <Text style={styles.footer}>Modo demostración · pago simulado</Text>
           ) : null
         }
       />
