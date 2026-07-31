@@ -96,6 +96,27 @@ Testing interno) → Crear versión → subir bundle.
 npm run build:apk           # → android/app/build/outputs/apk/release/app-release.apk
 ```
 
+**APK ligero (solo arm64-v8a, ~25 MB)** — para repartir/probar rápido. En
+`android/app/build.gradle`, dentro de `android { }`, se agregó:
+
+```gradle
+splits {
+    abi { enable true; reset(); include "arm64-v8a"; universalApk false }
+}
+```
+
+Luego:
+```bash
+cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+# → android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+```
+
+> El APK **de release** empaqueta el JS adentro y corre solo (sin Metro). El de
+> **debug** necesita `npx expo start` corriendo. Para la demo, usa el release.
+
+> Requiere `expo-asset` instalado (`npx expo install expo-asset`) para que el
+> bundle de release funcione.
+
 ## Firma — snippet para `android/app/build.gradle`
 
 Después del `prebuild`, dentro del bloque `android { ... }`:

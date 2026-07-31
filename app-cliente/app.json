@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0d0d0f"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lecrobelle.app"
@@ -29,6 +31,9 @@
       "eas": {
         "projectId": ""
       }
-    }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
