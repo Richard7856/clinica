@@ -33,7 +33,13 @@
       }
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L'Ecrobelle usa la cámara para escanear el QR de las citas."
+        }
+      ]
     ]
   }
 }

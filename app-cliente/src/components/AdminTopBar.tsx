@@ -6,8 +6,8 @@ import { Swan } from "./Swan";
 import { useAuth } from "@/lib/auth";
 import { colors, spacing } from "@/theme";
 
-// Barra superior del panel admin: marca + etiqueta "Admin" + cerrar sesión.
-export function AdminTopBar() {
+// Barra superior de paneles de staff: marca + etiqueta de rol + cerrar sesión.
+export function AdminTopBar({ roleLabel = "Admin" }: { roleLabel?: string }) {
   const { staff, signOut } = useAuth();
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
@@ -16,7 +16,7 @@ export function AdminTopBar() {
           <Swan size={22} color={colors.cream} />
           <View>
             <Text style={styles.name}>L'ECROBELLE</Text>
-            <Text style={styles.role}>Admin · {staff?.fullName ?? ""}</Text>
+            <Text style={styles.role}>{roleLabel} · {staff?.fullName ?? ""}</Text>
           </View>
         </View>
         <Pressable onPress={() => signOut()} hitSlop={10} style={styles.logout}>

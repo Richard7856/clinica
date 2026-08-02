@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { Tabs } from "@/navigation/Tabs";
 import { AdminTabs } from "@/navigation/AdminTabs";
+import { CollaboratorTabs } from "@/navigation/CollaboratorTabs";
 import { colors } from "@/theme";
 
 // Decide entre login, panel de cliente y panel de admin según el rol.
@@ -22,7 +23,9 @@ function Root() {
   }
 
   if (!user) return <LoginScreen />;
-  return role === "admin" ? <AdminTabs /> : <Tabs />;
+  if (role === "admin") return <AdminTabs />;
+  if (role === "collaborator") return <CollaboratorTabs />;
+  return <Tabs />;
 }
 
 export default function App() {

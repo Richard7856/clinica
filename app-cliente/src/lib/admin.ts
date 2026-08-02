@@ -9,8 +9,17 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
+import { doc as fbDoc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Promotion, Device, Appointment, RewardItem } from "./types";
+import type {
+  Promotion,
+  Device,
+  Appointment,
+  RewardItem,
+  Clinic,
+  StoreProduct,
+  ClinicInfo,
+} from "./types";
 
 // Operaciones del panel admin sobre Firestore. El staff tiene permisos de
 // escritura (reglas de la clínica). Todo directo, sin backend intermedio.
@@ -52,6 +61,8 @@ export async function listDevices(): Promise<Device[]> {
       name: (data.name as string) ?? "",
       type: data.type as string | undefined,
       cabinId: data.cabinId as string | undefined,
+      clinicId: (data.clinicId as string | undefined) ?? undefined,
+      hours: data.hours as string | undefined,
       status: (data.status as Device["status"]) ?? "active",
     };
   });
@@ -62,6 +73,114 @@ export async function setDeviceStatus(
   status: Device["status"],
 ): Promise<void> {
   await updateDoc(doc(db, "devices", id), { status, updatedAt: serverTimestamp() });
+}
+
+// Asigna clínica y horario a un aparato.
+export async function updateDevice(
+  id: string,
+  patch: Partial<Pick<Device, "clinicId" | "hours" | "name" | "type">>,
+): Promise<void> {
+  await updateDoc(doc(db, "devices", id), { ...patch, updatedAt: serverTimestamp() });
+}
+
+export async function createDevice(
+  input: Pick<Device, "name" | "type" | "clinicId" | "hours">,
+): Promise<void> {
+  await addDoc(collection(db, "devices"), {
+    name: input.name,
+    type: input.type ?? "",
+    clinicId: input.clinicId ?? null,
+    hours: input.hours ?? "",
+    status: "active",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// ── Clínicas (multi-clínica ligero) ─────────────────────────────────────────
+export async function listClinics(): Promise<Clinic[]> {
+  const snap = await getDocs(collection(db, "clinics"));
+  return snap.docs.map((d) => {
+    const x = d.data();
+    return {
+      id: d.id,
+      name: (x.name as string) ?? "",
+      address: x.address as string | undefined,
+      phone: x.phone as string | undefined,
+      active: x.active !== false,
+    };
+  });
+}
+
+export async function createClinic(
+  input: Pick<Clinic, "name" | "address" | "phone">,
+): Promise<void> {
+  await addDoc(collection(db, "clinics"), {
+    name: input.name,
+    address: input.address ?? "",
+    phone: input.phone ?? "",
+    active: true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteClinic(id: string): Promise<void> {
+  await deleteDoc(doc(db, "clinics", id));
+}
+
+// ── Tienda (productos físicos) ──────────────────────────────────────────────
+export async function listStoreProducts(): Promise<StoreProduct[]> {
+  const snap = await getDocs(collection(db, "storeProducts"));
+  return snap.docs.map((d) => {
+    const x = d.data();
+    return {
+      id: d.id,
+      name: (x.name as string) ?? "",
+      description: (x.description as string) ?? "",
+      price: typeof x.price === "number" ? x.price : 0,
+      stock: typeof x.stock === "number" ? x.stock : undefined,
+      imageUrl: x.imageUrl as string | undefined,
+      active: Boolean(x.active),
+    };
+  });
+}
+
+export async function createStoreProduct(
+  input: Pick<StoreProduct, "name" | "description" | "price" | "stock">,
+): Promise<void> {
+  await addDoc(collection(db, "storeProducts"), {
+    ...input,
+    active: true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function setStoreProductActive(id: string, active: boolean): Promise<void> {
+  await updateDoc(doc(db, "storeProducts", id), { active, updatedAt: serverTimestamp() });
+}
+
+export async function deleteStoreProduct(id: string): Promise<void> {
+  await deleteDoc(doc(db, "storeProducts", id));
+}
+
+// ── Config de puntos (settings/clinic) ──────────────────────────────────────
+export async function getClinicSettings(): Promise<ClinicInfo | null> {
+  const snap = await getDoc(fbDoc(db, "settings", "clinic"));
+  if (!snap.exists()) return null;
+  return snap.data() as ClinicInfo;
+}
+
+export async function savePointsConfig(
+  pointsThreshold: number,
+  cisnesPerThreshold: number,
+): Promise<void> {
+  await setDoc(
+    fbDoc(db, "settings", "clinic"),
+    { pointsThreshold, cisnesPerThreshold, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
 }
 
 // ── Citas (colección `appointments`) ────────────────────────────────────────

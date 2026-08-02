@@ -3,7 +3,8 @@ import { View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { RewardsScreen } from "@/screens/RewardsScreen";
-import { ShopScreen } from "@/screens/ShopScreen";
+import { CitaScreen } from "@/screens/CitaScreen";
+import { StoreScreen } from "@/screens/StoreScreen";
 import { LocationScreen } from "@/screens/LocationScreen";
 import { TabIcon, type TabName } from "@/components/TabIcon";
 import { TopBar } from "@/components/TopBar";
@@ -15,7 +16,8 @@ const Tab = createBottomTabNavigator();
 const ICONS: Record<string, TabName> = {
   Inicio: "inicio",
   Recompensas: "recompensas",
-  Comprar: "comprar",
+  Cita: "citas",
+  Tienda: "comprar",
   Ubicación: "ubicacion",
 };
 
@@ -47,7 +49,8 @@ export function Tabs() {
       >
         <Tab.Screen name="Inicio" component={HomeScreen} />
         <Tab.Screen name="Recompensas" component={RewardsScreen} />
-        <Tab.Screen name="Comprar" component={ShopScreen} />
+        <Tab.Screen name="Cita" component={CitaScreen} />
+        <Tab.Screen name="Tienda" component={StoreScreen} />
         <Tab.Screen name="Ubicación" component={LocationScreen} />
       </Tab.Navigator>
     </View>

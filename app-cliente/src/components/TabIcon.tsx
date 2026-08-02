@@ -10,7 +10,8 @@ export type TabName =
   | "ubicacion"
   | "promos"
   | "aparatos"
-  | "citas";
+  | "citas"
+  | "escanear";
 
 export function TabIcon({
   name,
@@ -70,6 +71,12 @@ export function TabIcon({
         <G {...stroke}>
           <Rect x={3} y={4} width={18} height={18} rx={2} />
           <Path d="M3 10h18M8 2v4M16 2v4M8 15l2 2 4-4" />
+        </G>
+      )}
+      {name === "escanear" && (
+        <G {...stroke}>
+          <Path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+          <Path d="M3 12h18" />
         </G>
       )}
     </Svg>

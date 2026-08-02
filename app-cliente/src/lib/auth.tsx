@@ -24,7 +24,7 @@ import {
 import { auth, db } from "./firebase";
 import type { Patient } from "./types";
 
-export type Role = "admin" | "client";
+export type Role = "admin" | "collaborator" | "client";
 
 export interface StaffInfo {
   uid: string;
@@ -132,9 +132,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsub;
   }, [loadPatient]);
 
+  // Rol: staff con role "admin" → panel admin; cualquier otro staff
+  // (collaborator/reception/therapist) → panel colaborador; si no, cliente.
+  const role: Role = staff
+    ? staff.role === "admin"
+      ? "admin"
+      : "collaborator"
+    : "client";
+
   const value: AuthState = {
     user,
-    role: staff ? "admin" : "client",
+    role,
     staff,
     patient,
     loading,
