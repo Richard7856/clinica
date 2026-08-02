@@ -112,6 +112,45 @@ export function welcomeEmail({ clinicName, patientName, qrCid }: WelcomeArgs): {
   };
 }
 
+// ─── 1b. QR de una cita solicitada ───────────────────────────────────────────
+
+export interface AppointmentQrArgs {
+  clinicName: string;
+  patientName: string;
+  treatmentName?: string;
+  dateLabel?: string;
+  qrCid: string;
+}
+
+export function appointmentQrEmail({
+  clinicName,
+  patientName,
+  treatmentName,
+  dateLabel,
+  qrCid,
+}: AppointmentQrArgs): { subject: string; html: string } {
+  const subject = `El QR de tu cita en ${clinicName || BRAND}`;
+  const body = `
+    ${heading(`¡Tu cita está lista, ${firstName(patientName)}!`)}
+    ${para(`Agendamos tu cita${treatmentName ? ` de <strong>${escapeHtml(treatmentName)}</strong>` : ""}${dateLabel ? ` para <strong>${escapeHtml(dateLabel)}</strong>` : ""}. Muestra este <strong>código QR</strong> al llegar: al escanearlo se te asignan tus Cisnes.`)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;">
+      <tr><td align="center" style="background:${COLOR_BG};border-radius:12px;padding:24px;">
+        <img src="${qrCid}" width="220" height="220" alt="QR de tu cita" style="display:block;border-radius:8px;background:#fff;padding:8px;" />
+      </td></tr>
+    </table>
+    ${para(`Guarda este correo o toma una captura. ¡Te esperamos!`)}
+  `;
+  return {
+    subject,
+    html: shell({
+      title: subject,
+      clinicName,
+      preheader: "El código QR de tu cita.",
+      body,
+    }),
+  };
+}
+
 // ─── 2. Resumen después de la visita (puntos + sesiones restantes) ───────────
 
 export interface VisitSummaryArgs {

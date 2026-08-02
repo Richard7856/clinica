@@ -13,6 +13,7 @@ import QRCode from "react-native-qrcode-svg";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { requestAppointment, listMyAppointments } from "@/lib/appointments";
+import { sendAppointmentQrEmail } from "@/lib/notify";
 import { colors, spacing, radius, font } from "@/theme";
 import type { Appointment, Clinic } from "@/lib/types";
 
@@ -129,16 +130,18 @@ export function CitaScreen() {
     }
     setSubmitting(true);
     try {
-      await requestAppointment({
+      const newId = await requestAppointment({
         patientId: patient.id,
         treatmentId,
         clinicId: clinicId ?? undefined,
         startAt: selectedDateIso,
       });
+      // Envía el correo con el QR (best-effort, no bloquea).
+      sendAppointmentQrEmail(newId).catch(() => {});
       // Recarga la lista para mostrar la nueva cita con su QR.
       const myAppts = await listMyAppointments(patient.id);
       setAppointments(myAppts);
-      Alert.alert("¡Cita solicitada!", "Muestra el QR de tu cita al llegar.");
+      Alert.alert("¡Cita solicitada!", "Muestra el QR de tu cita al llegar (también te lo enviamos por correo).");
     } catch (e) {
       Alert.alert(
         "No se pudo pedir la cita",
