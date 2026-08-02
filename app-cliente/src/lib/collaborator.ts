@@ -1,6 +1,7 @@
 import {
   doc,
   getDoc,
+  getDocs,
   collection,
   runTransaction,
   serverTimestamp,
@@ -9,6 +10,66 @@ import {
 import { db } from "./firebase";
 import { cisnesForAmount } from "./types";
 import type { Appointment, Patient } from "./types";
+
+// Cita del día enriquecida con datos del cliente (para la lista del colaborador).
+export interface TodayVisit {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientEmail: string;
+  patientPoints: number;
+  treatmentName: string;
+  clinicName: string;
+  startAt: string;
+  status: string;
+  pointsAwarded: boolean;
+}
+
+function toIso(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "toDate" in v)
+    return (v as { toDate: () => Date }).toDate().toISOString();
+  return "";
+}
+function localDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Lista las citas de HOY (día local) con nombre del cliente, tratamiento y clínica.
+export async function listTodayVisits(): Promise<TodayVisit[]> {
+  const [aptSnap, patSnap, trSnap, clSnap] = await Promise.all([
+    getDocs(collection(db, "appointments")),
+    getDocs(collection(db, "patients")),
+    getDocs(collection(db, "treatments")),
+    getDocs(collection(db, "clinics")),
+  ]);
+  const patients = new Map(patSnap.docs.map((d) => [d.id, d.data()]));
+  const treatments = new Map(trSnap.docs.map((d) => [d.id, (d.data().name as string) ?? ""]));
+  const clinics = new Map(clSnap.docs.map((d) => [d.id, (d.data().name as string) ?? ""]));
+  const today = localDay(new Date());
+
+  const rows: TodayVisit[] = [];
+  for (const d of aptSnap.docs) {
+    const a = d.data();
+    const startAt = toIso(a.startAt);
+    if (!startAt) continue;
+    if (localDay(new Date(startAt)) !== today) continue;
+    const p = patients.get(a.patientId) ?? {};
+    rows.push({
+      id: d.id,
+      patientId: a.patientId ?? "",
+      patientName: (p.fullName as string) ?? "—",
+      patientEmail: (p.email as string) ?? "",
+      patientPoints: typeof p.points === "number" ? p.points : 0,
+      treatmentName: treatments.get(a.treatmentId) ?? "Tratamiento",
+      clinicName: clinics.get(a.clinicId) ?? "",
+      startAt,
+      status: a.status ?? "requested",
+      pointsAwarded: Boolean(a.pointsAwarded),
+    });
+  }
+  return rows.sort((x, y) => x.startAt.localeCompare(y.startAt));
+}
 
 // Panel colaborador: escanea el QR de una cita y asigna los Cisnes.
 // Los puntos SOLO se otorgan por esta vía (escaneo del colaborador).

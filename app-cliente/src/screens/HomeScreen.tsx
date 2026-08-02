@@ -6,14 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from "react-native";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-} from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { Swan } from "@/components/Swan";
@@ -39,17 +32,15 @@ export function HomeScreen() {
       return;
     }
     try {
+      // Solo where (sin orderBy/limit) para no requerir índice compuesto.
       const snap = await getDocs(
-        query(
-          collection(db, "rewards"),
-          where("patientId", "==", patient.id),
-          orderBy("date", "desc"),
-          limit(5),
-        ),
+        query(collection(db, "rewards"), where("patientId", "==", patient.id)),
       );
-      setActivity(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Reward, "id">) })),
-      );
+      const rows = snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<Reward, "id">) }))
+        .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
+        .slice(0, 5);
+      setActivity(rows);
     } catch {
       setActivity([]);
     }

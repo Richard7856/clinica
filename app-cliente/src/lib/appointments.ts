@@ -4,7 +4,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -37,14 +36,11 @@ export async function requestAppointment(input: {
 }
 
 export async function listMyAppointments(patientId: string): Promise<Appointment[]> {
+  // Solo where (sin orderBy) para no requerir índice compuesto; ordenamos abajo.
   const snap = await getDocs(
-    query(
-      collection(db, "appointments"),
-      where("patientId", "==", patientId),
-      orderBy("startAt", "desc"),
-    ),
+    query(collection(db, "appointments"), where("patientId", "==", patientId)),
   );
-  return snap.docs.map((d) => {
+  const rows = snap.docs.map((d) => {
     const a = d.data();
     return {
       id: d.id,
@@ -65,4 +61,5 @@ export async function listMyAppointments(patientId: string): Promise<Appointment
       amountSpent: a.amountSpent,
     };
   });
+  return rows.sort((x, y) => y.startAt.localeCompare(x.startAt));
 }
