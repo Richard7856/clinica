@@ -148,3 +148,24 @@ verifica el ID token del que llama y exige rol admin antes de actuar.
 - El cambio de rol requiere que el usuario refresque el token (re-login).
 - El primer admin necesita su claim seteado una vez (o el fallback al doc
   /staff cubre el arranque).
+
+---
+
+## [2026-08-02] App móvil cliente (Expo) + migración a clin-bd81e
+
+**Contexto:** El cliente pidió una APK nativa de doble cara (cliente + admin +
+colaborador) como demo de capacidades, además de la clínica web.
+
+**Decisión:** App Expo/RN (SDK 52) en `app-cliente/`, reusando Firebase. Se
+migró el backend de `euromex-t2o27z` (con plan de pago) a **`clin-bd81e`**
+(gratis) para evitar costos. Multi-clínica ligero (etiqueta), puntos por gasto
+configurable, QR por cita escaneado por el rol colaborador (única vía de
+puntos), ecommerce por usuario, panel KPI, y restricción de usuarios por
+bandera.
+
+**Estado, credenciales de demo, pasos de build en la nube y pendientes:** ver
+`app-cliente/ESTADO.md` (documento de handoff).
+
+**Riesgos / limitaciones:** reglas de clin-bd81e en modo prueba (~30 días);
+correos solo a oxxo (Resend sin dominio verificado); env de Vercel a medio
+migrar; restricción de usuarios "suave"; pago simulado.
