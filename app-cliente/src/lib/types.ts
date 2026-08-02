@@ -8,6 +8,8 @@ export interface Patient {
   phone?: string;
   qrSlug: string;
   points: number;
+  banned?: boolean; // admin lo bloqueó (no puede entrar)
+  storeEnabled?: boolean; // acceso al ecommerce (no es para todos)
 }
 
 export type RewardType = "earned" | "redeemed";

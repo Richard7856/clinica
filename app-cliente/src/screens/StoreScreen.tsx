@@ -10,10 +10,14 @@ import {
 } from "react-native";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth";
+import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font } from "@/theme";
 import type { StoreProduct } from "@/lib/types";
 
 export function StoreScreen() {
+  const { patient } = useAuth();
+  const storeEnabled = patient?.storeEnabled ?? false;
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,6 +105,20 @@ export function StoreScreen() {
     );
   }
 
+  // La tienda no es para todos: el admin habilita el acceso por usuario.
+  if (!storeEnabled) {
+    return (
+      <View style={[styles.root, styles.locked]}>
+        <Swan size={56} color={colors.muted} />
+        <Text style={styles.lockedTitle}>Tienda no disponible</Text>
+        <Text style={styles.lockedText}>
+          El acceso a la tienda está habilitado solo para clientes seleccionados.
+          Pregunta en la clínica para activarlo en tu cuenta.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <FlatList
@@ -131,6 +149,9 @@ export function StoreScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
+  locked: { alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.md },
+  lockedTitle: { fontSize: font.size.xl, color: colors.ink, fontWeight: "600" },
+  lockedText: { fontSize: font.size.sm, color: colors.muted, textAlign: "center", lineHeight: 20 },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,

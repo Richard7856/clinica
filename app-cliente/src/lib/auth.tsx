@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
+import { Alert } from "react-native";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -76,6 +77,8 @@ async function findPatientByEmail(email: string): Promise<Patient | null> {
     phone: d.phone as string | undefined,
     qrSlug: (d.qrSlug as string) ?? "",
     points: typeof d.points === "number" ? d.points : 0,
+    banned: Boolean(d.banned),
+    storeEnabled: Boolean(d.storeEnabled),
   };
 }
 
@@ -108,7 +111,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      setPatient(await findPatientByEmail(u.email));
+      const p = await findPatientByEmail(u.email);
+      // Usuario restringido por el admin: se le niega el acceso.
+      if (p?.banned) {
+        Alert.alert("Cuenta restringida", "Tu acceso fue suspendido. Contacta a la clínica.");
+        await fbSignOut(auth);
+        setPatient(null);
+        return;
+      }
+      setPatient(p);
     } catch {
       setPatient(null);
     }
