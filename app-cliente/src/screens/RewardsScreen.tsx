@@ -96,17 +96,25 @@ export function RewardsScreen() {
   function renderItem({ item }: { item: RewardItem }) {
     const canRedeem = points >= item.cost;
     const busy = redeemingId === item.id;
+    const faltan = item.cost - points;
     return (
       <View style={styles.card}>
-        {/* Placeholder de imagen hasta tener imageUrl real */}
-        <View style={styles.cardHeader} />
+        {/* Imagen (pendiente de subir desde el admin) */}
+        <View style={styles.cardHeader}>
+          <Swan size={26} color="rgba(255,255,255,0.75)" />
+        </View>
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
           <View style={styles.costRow}>
-            <Swan size={14} color={colors.goldDeep} />
-            <Text style={styles.costText}>{item.cost} Cisnes</Text>
+            <Swan size={13} color={colors.goldDeep} />
+            <Text style={styles.costText}>{item.cost}</Text>
+            <Text style={styles.costUnit}>Cisnes</Text>
           </View>
-          <Text style={styles.cardDesc}>{item.description}</Text>
+          <Text style={styles.cardDesc} numberOfLines={2}>
+            {item.description}
+          </Text>
 
           <Pressable
             style={({ pressed }) => [
@@ -116,14 +124,8 @@ export function RewardsScreen() {
             onPress={() => onRedeem(item)}
             disabled={!canRedeem || busy}
           >
-            <Text
-              style={canRedeem ? styles.redeemText : styles.redeemTextDisabled}
-            >
-              {busy
-                ? "Canjeando…"
-                : canRedeem
-                  ? "Canjear recompensa"
-                  : `Te faltan ${item.cost - points} Cisnes`}
+            <Text style={canRedeem ? styles.redeemText : styles.redeemTextDisabled}>
+              {busy ? "Canjeando…" : canRedeem ? "Canjear" : `Faltan ${faltan}`}
             </Text>
           </Pressable>
         </View>
@@ -137,6 +139,8 @@ export function RewardsScreen() {
         data={items}
         keyExtractor={(it) => it.id}
         renderItem={renderItem}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -184,67 +188,74 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: spacing.xs,
   },
+  row: { gap: spacing.md },
   card: {
+    flex: 1,
     backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.cardLine,
     borderRadius: radius.lg,
     overflow: "hidden",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+    // Sombra suave: da profundidad sin ensuciar el look editorial.
+    shadowColor: "#2b2118",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   cardHeader: {
     height: 96,
     backgroundColor: colors.rose,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardBody: {
-    padding: spacing.lg,
-  },
+  cardBody: { padding: spacing.md, flex: 1 },
   cardTitle: {
-    fontSize: font.size.xl,
-    fontWeight: "400",
+    fontSize: font.size.md,
+    fontWeight: "600",
     color: colors.textOnCard,
+    lineHeight: 19,
   },
   costRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
+    gap: 4,
     marginTop: spacing.sm,
   },
-  costText: {
-    color: colors.goldDeep,
-    fontWeight: "700",
-    fontSize: font.size.md,
-  },
+  costText: { color: colors.goldDeep, fontWeight: "800", fontSize: font.size.md },
+  costUnit: { color: colors.goldDeep, fontWeight: "600", fontSize: font.size.xs },
   cardDesc: {
     color: colors.subtleOnCard,
-    fontSize: font.size.sm,
-    marginTop: spacing.sm,
-    lineHeight: 18,
+    fontSize: font.size.xs,
+    marginTop: 4,
+    lineHeight: 16,
+    minHeight: 32,
   },
   redeemBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.md,
-    paddingVertical: 13,
+    paddingVertical: 10,
     alignItems: "center",
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   redeemText: {
     color: colors.goldSoft,
     fontWeight: "700",
-    fontSize: font.size.md,
-    letterSpacing: 0.5,
+    fontSize: font.size.sm,
+    letterSpacing: 0.3,
   },
   redeemBtnDisabled: {
     backgroundColor: "#eee9dd",
     borderRadius: radius.md,
-    paddingVertical: 13,
+    paddingVertical: 10,
     alignItems: "center",
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   redeemTextDisabled: {
     color: colors.subtleOnCard,
     fontWeight: "600",
-    fontSize: font.size.md,
+    fontSize: font.size.sm,
   },
   empty: {
     textAlign: "center",

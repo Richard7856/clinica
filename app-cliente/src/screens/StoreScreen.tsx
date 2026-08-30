@@ -76,29 +76,40 @@ export function StoreScreen() {
   }
 
   function renderItem({ item }: { item: StoreProduct }) {
+    const agotado = typeof item.stock === "number" && item.stock <= 0;
     return (
       <View style={styles.card}>
-        {/* Placeholder de imagen hasta tener imageUrl real */}
-        <View style={styles.cardImage} />
+        {/* Imagen (pendiente de subir desde el admin) */}
+        <View style={styles.cardImage}>
+          <Swan size={26} color="rgba(255,255,255,0.75)" />
+        </View>
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.price}>
-            ${item.price.toLocaleString("es-MX")}
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item.name}
           </Text>
+          <Text style={styles.price}>${item.price.toLocaleString("es-MX")}</Text>
           {item.description ? (
-            <Text style={styles.cardDesc}>{item.description}</Text>
+            <Text style={styles.cardDesc} numberOfLines={2}>
+              {item.description}
+            </Text>
           ) : null}
           {typeof item.stock === "number" ? (
-            <Text style={styles.stock}>
-              {item.stock > 0 ? `${item.stock} disponibles` : "Agotado"}
+            <Text style={[styles.stock, agotado && styles.stockOut]}>
+              {agotado ? "Agotado" : `${item.stock} disponibles`}
             </Text>
           ) : null}
 
           <Pressable
-            style={({ pressed }) => [styles.buyBtn, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [
+              agotado ? styles.buyBtnOff : styles.buyBtn,
+              pressed && !agotado && { opacity: 0.9 },
+            ]}
             onPress={() => onBuy(item)}
+            disabled={agotado}
           >
-            <Text style={styles.buyText}>Comprar</Text>
+            <Text style={agotado ? styles.buyTextOff : styles.buyText}>
+              {agotado ? "Agotado" : "Comprar"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -125,6 +136,8 @@ export function StoreScreen() {
         data={products}
         keyExtractor={(it) => it.id}
         renderItem={renderItem}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -171,57 +184,70 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: spacing.xs,
   },
+  row: { gap: spacing.md },
   card: {
+    flex: 1,
     backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.cardLine,
     borderRadius: radius.lg,
     overflow: "hidden",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+    shadowColor: "#2b2118",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   cardImage: {
-    height: 120,
+    height: 104,
     backgroundColor: colors.rose,
-    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardBody: {
-    padding: spacing.lg,
-  },
+  cardBody: { padding: spacing.md, flex: 1 },
   cardTitle: {
-    fontSize: font.size.lg,
-    fontWeight: "400",
+    fontSize: font.size.md,
+    fontWeight: "600",
     color: colors.textOnCard,
+    lineHeight: 19,
   },
   price: {
     color: colors.goldDeep,
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: font.size.lg,
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
   cardDesc: {
     color: colors.subtleOnCard,
-    fontSize: font.size.sm,
-    marginTop: spacing.sm,
-    lineHeight: 18,
-  },
-  stock: {
-    color: colors.muted,
     fontSize: font.size.xs,
-    marginTop: spacing.sm,
+    marginTop: 4,
+    lineHeight: 16,
+    minHeight: 32,
   },
+  stock: { color: colors.muted, fontSize: font.size.xs, marginTop: 4 },
+  stockOut: { color: colors.danger, fontWeight: "700" },
   buyBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,
-    paddingVertical: 13,
+    paddingVertical: 10,
     alignItems: "center",
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   buyText: {
-    color: colors.ink,
+    color: "#231b06",
     fontWeight: "700",
-    fontSize: font.size.md,
-    letterSpacing: 0.5,
+    fontSize: font.size.sm,
+    letterSpacing: 0.3,
   },
+  buyBtnOff: {
+    backgroundColor: "#eee9dd",
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: spacing.md,
+  },
+  buyTextOff: { color: colors.subtleOnCard, fontWeight: "600", fontSize: font.size.sm },
   empty: {
     textAlign: "center",
     color: colors.muted,
