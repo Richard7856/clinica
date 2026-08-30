@@ -9,6 +9,7 @@ import { AppointmentsAdminScreen } from "@/screens/admin/AppointmentsAdminScreen
 import { RewardsAdminScreen } from "@/screens/admin/RewardsAdminScreen";
 import { StoreAdminScreen } from "@/screens/admin/StoreAdminScreen";
 import { ClinicsAdminScreen } from "@/screens/admin/ClinicsAdminScreen";
+import { TreatmentsAdminScreen } from "@/screens/admin/TreatmentsAdminScreen";
 import { PointsConfigScreen } from "@/screens/admin/PointsConfigScreen";
 import { UsersAdminScreen } from "@/screens/admin/UsersAdminScreen";
 import { AjustesMenuScreen } from "@/screens/admin/AjustesMenuScreen";
@@ -19,6 +20,7 @@ import { colors } from "@/theme";
 // El tab "Ajustes" agrupa configuración y gestión en un stack.
 export type AjustesStackParams = {
   AjustesMenu: undefined;
+  Tratamientos: undefined;
   Aparatos: undefined;
   Recompensas: undefined;
   Clinicas: undefined;
@@ -40,6 +42,7 @@ function AjustesNavigator() {
       }}
     >
       <AjustesStack.Screen name="AjustesMenu" component={AjustesMenuScreen} options={{ headerShown: false }} />
+      <AjustesStack.Screen name="Tratamientos" component={TreatmentsAdminScreen} options={{ title: "Tratamientos" }} />
       <AjustesStack.Screen name="Aparatos" component={DevicesAdminScreen} options={{ title: "Aparatos" }} />
       <AjustesStack.Screen name="Recompensas" component={RewardsAdminScreen} options={{ title: "Recompensas" }} />
       <AjustesStack.Screen name="Clinicas" component={ClinicsAdminScreen} options={{ title: "Clínicas" }} />

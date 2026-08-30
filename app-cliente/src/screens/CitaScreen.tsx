@@ -6,9 +6,8 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Alert,
 } from "react-native";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import QRCode from "react-native-qrcode-svg";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
@@ -17,22 +16,18 @@ import { sendAppointmentQrEmail } from "@/lib/notify";
 import { colors, spacing, radius, font } from "@/theme";
 import type { Appointment, Clinic, Treatment } from "@/lib/types";
 import { treatmentPriceLabel } from "@/lib/types";
-
-// Opciones de fecha rápida: fijan startAt a las 12:00 locales.
-type DateKey = "hoy" | "manana" | "tres";
-const DATE_OPTIONS: { key: DateKey; label: string; addDays: number }[] = [
-  { key: "hoy", label: "Hoy", addDays: 0 },
-  { key: "manana", label: "Mañana", addDays: 1 },
-  { key: "tres", label: "En 3 días", addDays: 3 },
-];
-
-// Devuelve el ISO de un día (a las 12:00 locales) desplazado addDays.
-function isoAtNoon(addDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + addDays);
-  d.setHours(12, 0, 0, 0);
-  return d.toISOString();
-}
+import { Picker, type PickerOption } from "@/components/form/Picker";
+import { Select } from "@/components/form/Select";
+import { Button } from "@/components/form/Button";
+import { useToast } from "@/components/ui/UIProvider";
+import {
+  HORARIOS_DEFAULT,
+  proximosDias,
+  slotsDelDia,
+  esCerrado,
+  fechaConSlot,
+  type Horario,
+} from "@/lib/schedule";
 
 // Traduce el estado del backend a etiqueta + color de badge.
 function statusBadge(status: string): { label: string; bg: string; fg: string } {
@@ -56,7 +51,10 @@ export function CitaScreen() {
   // Selección del form.
   const [treatmentId, setTreatmentId] = useState<string | null>(null);
   const [clinicId, setClinicId] = useState<string | null>(null);
-  const [dateKey, setDateKey] = useState<DateKey>("hoy");
+  const [horarios, setHorarios] = useState<Horario[]>(HORARIOS_DEFAULT);
+  const [dayIdx, setDayIdx] = useState(0);
+  const [slot, setSlot] = useState<string | null>(null);
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   // Carga inicial: tratamientos, clínicas y citas del paciente en paralelo.
@@ -64,12 +62,16 @@ export function CitaScreen() {
     let active = true;
     (async () => {
       try {
-        const [treatSnap, clinicSnap, myAppts] = await Promise.all([
+        const [treatSnap, clinicSnap, settingsSnap, myAppts] = await Promise.all([
           getDocs(collection(db, "treatments")),
           getDocs(collection(db, "clinics")),
+          getDoc(doc(db, "settings", "clinic")),
           patient ? listMyAppointments(patient.id) : Promise.resolve([]),
         ]);
         if (!active) return;
+
+        const hs = settingsSnap.exists() ? settingsSnap.data().horarios : null;
+        if (Array.isArray(hs) && hs.length > 0) setHorarios(hs as Horario[]);
 
         const treatRows: Treatment[] = treatSnap.docs
           .map((docSnap) => {
@@ -118,10 +120,22 @@ export function CitaScreen() {
     };
   }, [patient]);
 
-  const selectedDateIso = useMemo(() => {
-    const opt = DATE_OPTIONS.find((o) => o.key === dateKey) ?? DATE_OPTIONS[0];
-    return isoAtNoon(opt.addDays);
-  }, [dateKey]);
+  // Próximos 14 días para el selector de fecha.
+  const dias = useMemo(() => proximosDias(14), []);
+  const selectedDate = dias[dayIdx] ?? dias[0];
+
+  const selectedTreatment = useMemo(
+    () => treatments.find((t) => t.id === treatmentId) ?? null,
+    [treatments, treatmentId],
+  );
+
+  // Espacios de 30 min según el horario real de la clínica ese día.
+  const slots = useMemo(
+    () => slotsDelDia(selectedDate, horarios, selectedTreatment?.durationMin ?? 30, 30),
+    [selectedDate, horarios, selectedTreatment],
+  );
+  const cerrado = esCerrado(selectedDate, horarios);
+
 
   // Solo los tratamientos que se ofrecen en la sucursal elegida. Si un
   // tratamiento no trae clinicIds (dato viejo), se muestra en todas.
@@ -132,31 +146,43 @@ export function CitaScreen() {
     );
   }, [treatments, clinicId]);
 
+  // Opciones del desplegable: agrupadas por categoría y con el precio a la vista.
+  const treatmentOptions = useMemo<PickerOption[]>(
+    () =>
+      ["facial", "corporal"].flatMap((cat) =>
+        visibleTreatments
+          .filter((t) => t.category === cat)
+          .map((t) => ({
+            value: t.id,
+            label: t.name,
+            hint: treatmentPriceLabel(t),
+            group: cat === "facial" ? "Faciales" : "Corporales",
+          })),
+      ),
+    [visibleTreatments],
+  );
+
   async function onRequest() {
     if (!patient) return;
-    if (!treatmentId) {
-      Alert.alert("Falta tratamiento", "Elige un tratamiento para tu cita.");
-      return;
-    }
+    if (!treatmentId) return toast.error("Elige un tratamiento para tu cita.");
+    if (!slot) return toast.error("Elige un horario disponible.");
+
     setSubmitting(true);
     try {
       const newId = await requestAppointment({
         patientId: patient.id,
         treatmentId,
         clinicId: clinicId ?? undefined,
-        startAt: selectedDateIso,
+        startAt: fechaConSlot(selectedDate, slot).toISOString(),
       });
       // Envía el correo con el QR (best-effort, no bloquea).
       sendAppointmentQrEmail(newId).catch(() => {});
-      // Recarga la lista para mostrar la nueva cita con su QR.
       const myAppts = await listMyAppointments(patient.id);
       setAppointments(myAppts);
-      Alert.alert("¡Cita solicitada!", "Muestra el QR de tu cita al llegar (también te lo enviamos por correo).");
+      setSlot(null);
+      toast.success("¡Cita solicitada! Muestra el QR al llegar.");
     } catch (e) {
-      Alert.alert(
-        "No se pudo pedir la cita",
-        e instanceof Error ? e.message : "Intenta de nuevo.",
-      );
+      toast.error(e instanceof Error ? e.message : "No se pudo pedir la cita.");
     } finally {
       setSubmitting(false);
     }
@@ -194,104 +220,100 @@ export function CitaScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Pedir cita</Text>
 
-            {clinics.length > 0 && (
-              <>
-                <Text style={styles.fieldLabel}>Sucursal</Text>
-                <View style={styles.chipWrap}>
-                  {clinics.map((c) => {
-                    const on = clinicId === c.id;
-                    return (
-                      <Pressable
-                        key={c.id}
-                        onPress={() => {
-                          const next = on ? null : c.id;
-                          setClinicId(next);
-                          // El tratamiento elegido puede no existir en la otra
-                          // sucursal: lo limpiamos para evitar citas inválidas.
-                          setTreatmentId(null);
-                        }}
-                        style={[styles.chip, on && styles.chipOn]}
-                      >
-                        <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                          {c.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            )}
+            <Select
+              label="Sucursal"
+              required
+              options={clinics.map((c) => ({ value: c.id, label: c.name }))}
+              value={clinicId}
+              onChange={(v) => {
+                setClinicId(v);
+                // El tratamiento puede no existir en la otra sede.
+                setTreatmentId(null);
+                setSlot(null);
+              }}
+              empty="Sin sucursales disponibles."
+            />
 
-            <Text style={styles.fieldLabel}>Tratamiento</Text>
-            {!clinicId && clinics.length > 0 ? (
-              <Text style={styles.hint}>Elige una sucursal para ver sus tratamientos.</Text>
-            ) : visibleTreatments.length === 0 ? (
-              <Text style={styles.hint}>No hay tratamientos disponibles en esta sucursal.</Text>
-            ) : (
-              (["facial", "corporal"] as const).map((cat) => {
-                const items = visibleTreatments.filter((t) => t.category === cat);
-                if (items.length === 0) return null;
-                return (
-                  <View key={cat}>
-                    <Text style={styles.catLabel}>
-                      {cat === "facial" ? "Faciales" : "Corporales"}
-                    </Text>
-                    <View style={styles.chipWrap}>
-                      {items.map((t) => {
-                        const on = treatmentId === t.id;
-                        return (
-                          <Pressable
-                            key={t.id}
-                            onPress={() => setTreatmentId(t.id)}
-                            style={[styles.chip, on && styles.chipOn]}
-                          >
-                            <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                              {t.name}
-                            </Text>
-                            <Text style={[styles.chipPrice, on && styles.chipPriceOn]}>
-                              {treatmentPriceLabel(t)}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              })
-            )}
+            <Picker
+              label="Tratamiento"
+              required
+              title="Elige tu tratamiento"
+              placeholder={
+                clinicId || clinics.length === 0
+                  ? "Selecciona un tratamiento"
+                  : "Primero elige una sucursal"
+              }
+              disabled={!clinicId && clinics.length > 0}
+              options={treatmentOptions}
+              value={treatmentId}
+              onChange={(v) => {
+                setTreatmentId(v);
+                setSlot(null);
+              }}
+              helper={
+                selectedTreatment
+                  ? `Duración aproximada: ${selectedTreatment.durationMin ?? 30} min`
+                  : undefined
+              }
+              empty="No hay tratamientos en esta sucursal."
+            />
 
             <Text style={styles.fieldLabel}>Fecha</Text>
-            <View style={styles.chipWrap}>
-              {DATE_OPTIONS.map((o) => {
-                const on = dateKey === o.key;
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.daysRow}
+            >
+              {dias.map((d, i) => {
+                const on = i === dayIdx;
+                const closed = esCerrado(d, horarios);
                 return (
                   <Pressable
-                    key={o.key}
-                    onPress={() => setDateKey(o.key)}
-                    style={[styles.chip, on && styles.chipOn]}
+                    key={d.toISOString()}
+                    onPress={() => {
+                      setDayIdx(i);
+                      setSlot(null);
+                    }}
+                    style={[styles.day, on && styles.dayOn, closed && styles.dayClosed]}
                   >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                      {o.label}
+                    <Text style={[styles.dayName, on && styles.dayTextOn]}>
+                      {d.toLocaleDateString("es-MX", { weekday: "short" })}
                     </Text>
+                    <Text style={[styles.dayNum, on && styles.dayTextOn]}>{d.getDate()}</Text>
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
 
-            <Pressable
-              style={({ pressed }) => [
-                treatmentId ? styles.primaryBtn : styles.primaryBtnDisabled,
-                pressed && treatmentId && { opacity: 0.9 },
-              ]}
+            <Text style={styles.fieldLabel}>Horario</Text>
+            {cerrado ? (
+              <Text style={styles.hint}>Cerrado ese día. Elige otra fecha.</Text>
+            ) : slots.length === 0 ? (
+              <Text style={styles.hint}>Ya no quedan horarios ese día.</Text>
+            ) : (
+              <View style={styles.chipWrap}>
+                {slots.map((h) => {
+                  const on = slot === h;
+                  return (
+                    <Pressable
+                      key={h}
+                      onPress={() => setSlot(h)}
+                      style={[styles.chip, on && styles.chipOn]}
+                    >
+                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{h}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+
+            <Button
+              title="Pedir cita"
               onPress={onRequest}
-              disabled={!treatmentId || submitting}
-            >
-              <Text
-                style={treatmentId ? styles.primaryText : styles.primaryTextDisabled}
-              >
-                {submitting ? "Pidiendo…" : "Pedir cita"}
-              </Text>
-            </Pressable>
+              loading={submitting}
+              disabled={!treatmentId || !slot}
+              style={{ marginTop: spacing.lg }}
+            />
           </View>
 
           {/* Lista: mis citas */}
@@ -421,6 +443,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   hint: { fontSize: font.size.sm, color: colors.subtleOnCard },
+  daysRow: { gap: spacing.sm, paddingVertical: 2, paddingRight: spacing.md },
+  day: {
+    width: 54,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.cardLine,
+    backgroundColor: "#fff",
+    alignItems: "center",
+  },
+  dayOn: { backgroundColor: colors.ground, borderColor: colors.ground },
+  dayClosed: { opacity: 0.4 },
+  dayName: {
+    fontSize: font.size.xs,
+    color: colors.muted,
+    textTransform: "capitalize",
+    fontWeight: "600",
+  },
+  dayNum: { fontSize: font.size.lg, color: colors.ink, fontWeight: "700", marginTop: 2 },
+  dayTextOn: { color: colors.goldSoft },
   primaryBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,

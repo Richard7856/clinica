@@ -12,6 +12,7 @@ import {
 import { doc as fbDoc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
+  Treatment,
   Promotion,
   Device,
   Appointment,
@@ -364,4 +365,69 @@ function normalizeDate(v: unknown): string {
     return (v as { toDate: () => Date }).toDate().toISOString();
   }
   return new Date().toISOString();
+}
+
+// ── Tratamientos (catálogo) ─────────────────────────────────────────────────
+export async function listTreatmentsAdmin(): Promise<Treatment[]> {
+  const snap = await getDocs(collection(db, "treatments"));
+  return snap.docs
+    .map((d) => {
+      const x = d.data();
+      return {
+        id: d.id,
+        name: (x.name as string) ?? "",
+        category: (x.category as Treatment["category"]) ?? "facial",
+        price: typeof x.price === "number" ? x.price : 0,
+        priceMax: typeof x.priceMax === "number" ? x.priceMax : undefined,
+        priceNote: x.priceNote as string | undefined,
+        durationMin: typeof x.durationMin === "number" ? x.durationMin : 30,
+        clinicIds: Array.isArray(x.clinicIds) ? (x.clinicIds as string[]) : [],
+        cabins: (x.cabins as Record<string, string>) ?? undefined,
+        active: x.active !== false,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+export interface TreatmentInput {
+  name: string;
+  category: Treatment["category"];
+  price: number;
+  priceMax?: number;
+  priceNote?: string;
+  durationMin: number;
+  clinicIds: string[];
+}
+
+export async function createTreatment(input: TreatmentInput): Promise<void> {
+  await addDoc(collection(db, "treatments"), {
+    ...input,
+    basePrice: input.price, // compatibilidad con la web
+    requiresCabin: true,
+    deviceIds: [],
+    cabins: {},
+    active: true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateTreatment(
+  id: string,
+  patch: Partial<TreatmentInput>,
+): Promise<void> {
+  const extra = patch.price !== undefined ? { basePrice: patch.price } : {};
+  await updateDoc(doc(db, "treatments", id), {
+    ...patch,
+    ...extra,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function setTreatmentActive(id: string, active: boolean): Promise<void> {
+  await updateDoc(doc(db, "treatments", id), { active, updatedAt: serverTimestamp() });
+}
+
+export async function deleteTreatment(id: string): Promise<void> {
+  await deleteDoc(doc(db, "treatments", id));
 }

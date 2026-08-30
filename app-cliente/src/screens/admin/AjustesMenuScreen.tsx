@@ -9,6 +9,7 @@ type Props = NativeStackScreenProps<AjustesStackParams, "AjustesMenu">;
 // Menú del tab Ajustes: navega a las pantallas de configuración del admin.
 export function AjustesMenuScreen({ navigation }: Props) {
   const items: { key: keyof AjustesStackParams; label: string; desc: string }[] = [
+    { key: "Tratamientos", label: "Tratamientos", desc: "Catálogo, precios y sucursales" },
     { key: "Usuarios", label: "Usuarios", desc: "Restringir acceso y habilitar tienda" },
     { key: "Aparatos", label: "Aparatos", desc: "Equipos, clínica y horarios" },
     { key: "Recompensas", label: "Recompensas", desc: "Catálogo canjeable por Cisnes" },
