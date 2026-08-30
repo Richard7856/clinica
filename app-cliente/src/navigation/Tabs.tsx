@@ -1,7 +1,10 @@
 import React from "react";
 import { View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { HomeScreen } from "@/screens/HomeScreen";
+import { QrScreen } from "@/screens/QrScreen";
+import { PromosScreen } from "@/screens/PromosScreen";
 import { RewardsScreen } from "@/screens/RewardsScreen";
 import { CitaScreen } from "@/screens/CitaScreen";
 import { StoreScreen } from "@/screens/StoreScreen";
@@ -10,6 +13,31 @@ import { TabIcon, type TabName } from "@/components/TabIcon";
 import { TopBar } from "@/components/TopBar";
 import { useAuth } from "@/lib/auth";
 import { colors } from "@/theme";
+
+// Inicio es un stack, no una pantalla suelta: desde ahí se abre el QR a
+// pantalla completa y el listado de promociones sin salir del tab.
+export type HomeStackParams = {
+  Inicio: undefined;
+  MiQr: {
+    appointmentId: string;
+    titulo: string;
+    cuando: string;
+    sucursal?: string;
+  };
+  Promos: undefined;
+};
+
+const HomeStack = createNativeStackNavigator<HomeStackParams>();
+
+function InicioStack() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="Inicio" component={HomeScreen} />
+      <HomeStack.Screen name="MiQr" component={QrScreen} />
+      <HomeStack.Screen name="Promos" component={PromosScreen} />
+    </HomeStack.Navigator>
+  );
+}
 
 const Tab = createBottomTabNavigator();
 
@@ -47,8 +75,12 @@ export function Tabs() {
           tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3 },
         })}
       >
-        <Tab.Screen name="Inicio" component={HomeScreen} />
-        <Tab.Screen name="Recompensas" component={RewardsScreen} />
+        <Tab.Screen name="Inicio" component={InicioStack} />
+        <Tab.Screen
+          name="Recompensas"
+          component={RewardsScreen}
+          options={{ tabBarLabel: "Cisnes" }}
+        />
         <Tab.Screen name="Cita" component={CitaScreen} />
         <Tab.Screen name="Tienda" component={StoreScreen} />
         <Tab.Screen name="Ubicación" component={LocationScreen} />

@@ -7,9 +7,8 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import QRCode from "react-native-qrcode-svg";
-import { db } from "@/lib/firebase";
+import { listTreatments, listClinics, loadHorarios } from "@/lib/catalog";
 import { useAuth } from "@/lib/auth";
 import { requestAppointment, listMyAppointments } from "@/lib/appointments";
 import { sendAppointmentQrEmail } from "@/lib/notify";
@@ -62,46 +61,15 @@ export function CitaScreen() {
     let active = true;
     (async () => {
       try {
-        const [treatSnap, clinicSnap, settingsSnap, myAppts] = await Promise.all([
-          getDocs(collection(db, "treatments")),
-          getDocs(collection(db, "clinics")),
-          getDoc(doc(db, "settings", "clinic")),
+        const [treatRows, clinicRows, hs, myAppts] = await Promise.all([
+          listTreatments(),
+          listClinics(),
+          loadHorarios(),
           patient ? listMyAppointments(patient.id) : Promise.resolve([]),
         ]);
         if (!active) return;
 
-        const hs = settingsSnap.exists() ? settingsSnap.data().horarios : null;
-        if (Array.isArray(hs) && hs.length > 0) setHorarios(hs as Horario[]);
-
-        const treatRows: Treatment[] = treatSnap.docs
-          .map((docSnap) => {
-            const d = docSnap.data();
-            return {
-              id: docSnap.id,
-              name: (d.name as string) ?? "",
-              category: (d.category as Treatment["category"]) ?? "facial",
-              price: typeof d.price === "number" ? d.price : 0,
-              priceMax: typeof d.priceMax === "number" ? d.priceMax : undefined,
-              priceNote: d.priceNote as string | undefined,
-              durationMin: d.durationMin as number | undefined,
-              clinicIds: Array.isArray(d.clinicIds) ? (d.clinicIds as string[]) : [],
-              cabins: (d.cabins as Record<string, string>) ?? undefined,
-              active: d.active !== false,
-            };
-          })
-          .filter((t) => t.active);
-
-        const clinicRows: Clinic[] = clinicSnap.docs.map((docSnap) => {
-          const d = docSnap.data();
-          return {
-            id: docSnap.id,
-            name: (d.name as string) ?? "",
-            address: d.address as string | undefined,
-            phone: d.phone as string | undefined,
-            active: Boolean(d.active),
-          };
-        });
-
+        setHorarios(hs);
         setTreatments(treatRows);
         setClinics(clinicRows);
         setAppointments(myAppts);

@@ -93,3 +93,38 @@ export function proximosDias(n: number): Date[] {
   }
   return out;
 }
+
+// ---------- Etiquetas de fecha ----------
+// OJO: todo se compara en día LOCAL (getFullYear/getMonth/getDate), nunca en
+// UTC. Comparar en UTC hacía desaparecer las citas de la tarde en México.
+
+export function esMismoDia(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+// "Hoy" / "Mañana" / "Viernes 5 de sep" — lo que el cliente lee de un vistazo.
+export function etiquetaDia(date: Date, hoy = new Date()): string {
+  if (esMismoDia(date, hoy)) return "Hoy";
+  const manana = new Date(hoy);
+  manana.setDate(manana.getDate() + 1);
+  if (esMismoDia(date, manana)) return "Mañana";
+
+  const txt = date.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  });
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+// "4:00 pm" en minúsculas, como se escribe en español.
+export function etiquetaHora(date: Date): string {
+  return date
+    .toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })
+    .replace(/\s*a\.?\s*m\.?/i, " am")
+    .replace(/\s*p\.?\s*m\.?/i, " pm");
+}

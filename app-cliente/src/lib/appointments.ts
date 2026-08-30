@@ -63,3 +63,19 @@ export async function listMyAppointments(patientId: string): Promise<Appointment
   });
   return rows.sort((x, y) => y.startAt.localeCompare(x.startAt));
 }
+
+// Estados en los que una cita sigue "viva" y su QR aún sirve.
+const ACTIVAS = ["requested", "scheduled", "confirmed"];
+
+// La próxima cita del cliente: la más cercana en el futuro que siga activa.
+// `listMyAppointments` devuelve descendente, así que aquí reordenamos.
+export function pickNextAppointment(
+  appts: Appointment[],
+  ahora = new Date(),
+): Appointment | null {
+  const futuras = appts
+    .filter((a) => ACTIVAS.includes(a.status) && !a.pointsAwarded)
+    .filter((a) => a.startAt && new Date(a.startAt).getTime() >= ahora.getTime())
+    .sort((x, y) => x.startAt.localeCompare(y.startAt));
+  return futuras[0] ?? null;
+}
