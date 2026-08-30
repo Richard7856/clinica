@@ -104,3 +104,19 @@ IAM "Cloud Datastore User" en la cuenta de servicio.
 2. Colaborador → **Citas de hoy** → toca la cita → **Escanear QR** → captura
    monto → **Asignar Cisnes**.
 3. Cliente refresca Inicio → Cisnes suben. Admin → Inicio → venta en KPIs.
+
+## Web (para probar en iPhone) — agosto 2026
+
+- Proyecto Vercel **`lecrobelle-app`** (team `richards-projects-b633518f`,
+  id `prj_iO3IXPKmUJd2yB2VlPdLtlCqrcn6`), enlazado al repo con
+  **rootDirectory `app-cliente`**. Config de build en `app-cliente/vercel.json`
+  (`expo export --platform web` → `dist`, con rewrite SPA).
+- URL: **https://lecrobelle-app.vercel.app**
+- Se despliega en cada push a la rama. `main` NO tiene `app-cliente`.
+- Los dominios de Vercel ya están en **Authorized domains** de Firebase Auth
+  (sin eso, el login falla con `auth/unauthorized-domain`). Si se agrega un
+  dominio nuevo, hay que autorizarlo también.
+- `firebase.ts` trae config de respaldo del proyecto demo para que el build de
+  Vercel funcione sin `.env` (la config de cliente es pública por diseño).
+- **Limitación:** el escáner QR (`expo-camera`) carga jsQR desde CDN y tiene
+  soporte parcial en navegador; el panel colaborador conviene probarlo en el APK.
