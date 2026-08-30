@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { ScreenHeader } from "@/components/ui/Screen";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { AjustesStackParams } from "@/navigation/AdminTabs";
 
@@ -18,9 +19,7 @@ export function AjustesMenuScreen({ navigation }: Props) {
   ];
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Ajustes</Text>
-      <Text style={styles.subtitle}>Configuración de la clínica.</Text>
-      <View style={{ height: spacing.lg }} />
+      <ScreenHeader title="Ajustes" subtitle="Configuración de la clínica." />
       {items.map((it) => (
         <Pressable
           key={it.key}
@@ -40,9 +39,7 @@ export function AjustesMenuScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: spacing.lg, paddingTop: spacing.xl },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   row: {
     flexDirection: "row",
     alignItems: "center",

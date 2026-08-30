@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, useWindowDimensions, ScrollView } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BackHeader } from "@/components/BackHeader";
+import { ScreenHeader } from "@/components/ui/Screen";
 import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { HomeStackParams } from "@/navigation/Tabs";
@@ -21,7 +21,7 @@ export function QrScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <BackHeader title="Mi código QR" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Mi código QR" compact onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.treatment}>{titulo}</Text>

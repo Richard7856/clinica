@@ -49,6 +49,18 @@ export async function setPromotionActive(id: string, active: boolean): Promise<v
   await updateDoc(doc(db, "promotions", id), { active, updatedAt: serverTimestamp() });
 }
 
+export async function updatePromotion(
+  id: string,
+  input: Pick<Promotion, "title" | "description" | "badge">,
+): Promise<void> {
+  await updateDoc(doc(db, "promotions", id), {
+    title: input.title,
+    description: input.description,
+    badge: input.badge ?? "",
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function deletePromotion(id: string): Promise<void> {
   await deleteDoc(doc(db, "promotions", id));
 }
@@ -127,6 +139,18 @@ export async function createClinic(
   });
 }
 
+export async function updateClinic(
+  id: string,
+  input: Pick<Clinic, "name" | "address" | "phone">,
+): Promise<void> {
+  await updateDoc(doc(db, "clinics", id), {
+    name: input.name,
+    address: input.address ?? "",
+    phone: input.phone ?? "",
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function deleteClinic(id: string): Promise<void> {
   await deleteDoc(doc(db, "clinics", id));
 }
@@ -161,6 +185,19 @@ export async function createStoreProduct(
 
 export async function setStoreProductActive(id: string, active: boolean): Promise<void> {
   await updateDoc(doc(db, "storeProducts", id), { active, updatedAt: serverTimestamp() });
+}
+
+export async function updateStoreProduct(
+  id: string,
+  input: Pick<StoreProduct, "name" | "description" | "price" | "stock">,
+): Promise<void> {
+  await updateDoc(doc(db, "storeProducts", id), {
+    name: input.name,
+    description: input.description,
+    price: input.price,
+    stock: input.stock ?? null,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function deleteStoreProduct(id: string): Promise<void> {
@@ -233,6 +270,22 @@ export async function createRewardItem(
 
 export async function setRewardItemActive(id: string, active: boolean): Promise<void> {
   await updateDoc(doc(db, "rewardItems", id), { active, updatedAt: serverTimestamp() });
+}
+
+export async function updateRewardItem(
+  id: string,
+  input: Pick<RewardItem, "title" | "description" | "cost">,
+): Promise<void> {
+  await updateDoc(doc(db, "rewardItems", id), {
+    title: input.title,
+    description: input.description,
+    cost: input.cost,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteRewardItem(id: string): Promise<void> {
+  await deleteDoc(doc(db, "rewardItems", id));
 }
 
 // ── Usuarios (pacientes): restringir + acceso a tienda ──────────────────────

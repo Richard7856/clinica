@@ -33,21 +33,21 @@ const AjustesStack = createNativeStackNavigator<AjustesStackParams>();
 
 function AjustesNavigator() {
   return (
+    // Sin header del navigator: cada pantalla dibuja el suyo con ScreenHeader.
+    // Tener los dos hacía que el nombre apareciera dos veces, una encima de otra.
     <AjustesStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.ground },
-        headerTintColor: colors.cream,
-        headerTitleStyle: { fontWeight: "300" },
+        headerShown: false,
         contentStyle: { backgroundColor: colors.cream },
       }}
     >
-      <AjustesStack.Screen name="AjustesMenu" component={AjustesMenuScreen} options={{ headerShown: false }} />
-      <AjustesStack.Screen name="Tratamientos" component={TreatmentsAdminScreen} options={{ title: "Tratamientos" }} />
-      <AjustesStack.Screen name="Aparatos" component={DevicesAdminScreen} options={{ title: "Aparatos" }} />
-      <AjustesStack.Screen name="Recompensas" component={RewardsAdminScreen} options={{ title: "Recompensas" }} />
-      <AjustesStack.Screen name="Clinicas" component={ClinicsAdminScreen} options={{ title: "Clínicas" }} />
-      <AjustesStack.Screen name="Usuarios" component={UsersAdminScreen} options={{ title: "Usuarios" }} />
-      <AjustesStack.Screen name="ConfigPuntos" component={PointsConfigScreen} options={{ title: "Config. de puntos" }} />
+      <AjustesStack.Screen name="AjustesMenu" component={AjustesMenuScreen} />
+      <AjustesStack.Screen name="Tratamientos" component={TreatmentsAdminScreen} />
+      <AjustesStack.Screen name="Aparatos" component={DevicesAdminScreen} />
+      <AjustesStack.Screen name="Recompensas" component={RewardsAdminScreen} />
+      <AjustesStack.Screen name="Clinicas" component={ClinicsAdminScreen} />
+      <AjustesStack.Screen name="Usuarios" component={UsersAdminScreen} />
+      <AjustesStack.Screen name="ConfigPuntos" component={PointsConfigScreen} />
     </AjustesStack.Navigator>
   );
 }

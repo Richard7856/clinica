@@ -1,128 +1,146 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  FlatList,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Switch,
-} from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, FlatList, StyleSheet, Switch } from "react-native";
 import {
   listPromotions,
   createPromotion,
+  updatePromotion,
   setPromotionActive,
   deletePromotion,
 } from "@/lib/admin";
+import { ScreenHeader, Card, EmptyState, Loader } from "@/components/ui/Screen";
+import { RowActions } from "@/components/ui/Controls";
+import { FormModal } from "@/components/ui/FormModal";
+import { Field } from "@/components/form/Field";
+import { useToast, useConfirm } from "@/components/ui/UIProvider";
+import { texto, esValido, type Errors } from "@/lib/validate";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Promotion } from "@/lib/types";
 
-// Panel admin: control de promociones. Crear, activar/desactivar y eliminar.
-// Lo que se active aquí es lo que ve el cliente en su app.
+type Campo = "title" | "description" | "badge";
+const VACIO = { title: "", description: "", badge: "" };
+
+// Panel admin: promociones. Lo que se active aquí es lo que ve el cliente.
 export function PromotionsAdminScreen() {
   const [items, setItems] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [badge, setBadge] = useState("");
+  const [editing, setEditing] = useState<Promotion | "nueva" | null>(null);
+  const [form, setForm] = useState(VACIO);
+  const [errors, setErrors] = useState<Errors<Campo>>({});
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       setItems(await listPromotions());
     } catch {
       setItems([]);
+      toast.error("No se pudieron cargar las promociones.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function onCreate() {
-    if (title.trim().length < 3) {
-      Alert.alert("Falta título", "Escribe un título para la promoción.");
-      return;
-    }
+  function abrir(p: Promotion | "nueva") {
+    setEditing(p);
+    setErrors({});
+    setForm(
+      p === "nueva"
+        ? VACIO
+        : { title: p.title, description: p.description, badge: p.badge ?? "" },
+    );
+  }
+
+  async function onSubmit() {
+    const e: Errors<Campo> = { title: texto(form.title, 3, "El título") };
+    setErrors(e);
+    if (!esValido(e)) return;
+
     setSaving(true);
     try {
-      await createPromotion({
-        title: title.trim(),
-        description: desc.trim(),
-        badge: badge.trim(),
-      });
-      setTitle("");
-      setDesc("");
-      setBadge("");
-      setShowForm(false);
+      const datos = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        badge: form.badge.trim(),
+      };
+      if (editing === "nueva") await createPromotion(datos);
+      else if (editing) await updatePromotion(editing.id, datos);
+      setEditing(null);
       await load();
+      toast.success(editing === "nueva" ? "Promoción creada." : "Promoción actualizada.");
     } catch {
-      Alert.alert("Error", "No se pudo crear la promoción.");
+      toast.error("No se pudo guardar la promoción.");
     } finally {
       setSaving(false);
     }
   }
 
+  // Cambio optimista: el interruptor responde de inmediato y si falla revierte.
   async function onToggle(p: Promotion) {
-    setItems((prev) =>
-      prev.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)),
-    );
+    setItems((prev) => prev.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)));
     try {
       await setPromotionActive(p.id, !p.active);
     } catch {
-      load(); // revertir si falla
+      load();
+      toast.error("No se pudo cambiar la visibilidad.");
     }
   }
 
-  function onDelete(p: Promotion) {
-    Alert.alert("Eliminar", `¿Eliminar "${p.title}"?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          await deletePromotion(p.id);
-          load();
-        },
-      },
-    ]);
+  async function onDelete(p: Promotion) {
+    const ok = await confirm({
+      title: "Eliminar promoción",
+      message: `«${p.title}» dejará de verse en la app. Esta acción no se puede deshacer.`,
+      confirmText: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deletePromotion(p.id);
+      await load();
+      toast.success("Promoción eliminada.");
+    } catch {
+      toast.error("No se pudo eliminar.");
+    }
   }
 
   function renderItem({ item }: { item: Promotion }) {
     return (
-      <View style={styles.card}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.titleRow}>
+      <Card>
+        <View style={styles.top}>
+          <View style={styles.info}>
             {item.badge ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.badge}</Text>
               </View>
             ) : null}
-            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.title}>{item.title}</Text>
+            {item.description ? (
+              <Text style={styles.desc}>{item.description}</Text>
+            ) : null}
           </View>
-          <Text style={styles.cardDesc}>{item.description}</Text>
-          <Pressable onPress={() => onDelete(item)} hitSlop={8}>
-            <Text style={styles.delete}>Eliminar</Text>
-          </Pressable>
+          <View style={styles.switchCol}>
+            <Switch
+              value={item.active}
+              onValueChange={() => onToggle(item)}
+              trackColor={{ true: colors.gold, false: "#d8d1c4" }}
+              thumbColor="#fff"
+            />
+            <Text
+              style={[
+                styles.state,
+                { color: item.active ? colors.goldDeep : colors.muted },
+              ]}
+            >
+              {item.active ? "Visible" : "Oculta"}
+            </Text>
+          </View>
         </View>
-        <View style={styles.switchCol}>
-          <Switch
-            value={item.active}
-            onValueChange={() => onToggle(item)}
-            trackColor={{ true: colors.gold, false: "#d8d1c4" }}
-            thumbColor="#fff"
-          />
-          <Text style={[styles.state, { color: item.active ? colors.goldDeep : colors.muted }]}>
-            {item.active ? "Visible" : "Oculta"}
-          </Text>
-        </View>
-      </View>
+        <RowActions onEdit={() => abrir(item)} onDelete={() => onDelete(item)} />
+      </Card>
     );
   }
 
@@ -132,139 +150,84 @@ export function PromotionsAdminScreen() {
         data={items}
         keyExtractor={(it) => it.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>Promociones</Text>
-                <Text style={styles.subtitle}>
-                  Lo que actives aquí lo ve el cliente.
-                </Text>
-              </View>
-              <Pressable
-                style={styles.addBtn}
-                onPress={() => setShowForm((s) => !s)}
-              >
-                <Text style={styles.addBtnText}>{showForm ? "✕" : "+ Nueva"}</Text>
-              </Pressable>
-            </View>
-
-            {showForm && (
-              <View style={styles.form}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Título (ej. 2x1 Botox)"
-                  placeholderTextColor={colors.muted}
-                  value={title}
-                  onChangeText={setTitle}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Descripción"
-                  placeholderTextColor={colors.muted}
-                  value={desc}
-                  onChangeText={setDesc}
-                  multiline
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Etiqueta corta (ej. 2x1, GRATIS)"
-                  placeholderTextColor={colors.muted}
-                  value={badge}
-                  onChangeText={setBadge}
-                />
-                <Pressable
-                  style={styles.saveBtn}
-                  onPress={onCreate}
-                  disabled={saving}
-                >
-                  <Text style={styles.saveText}>
-                    {saving ? "Guardando…" : "Crear promoción"}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
+          <ScreenHeader
+            title="Promociones"
+            subtitle="Lo que actives aquí lo ve el cliente."
+            actionLabel="+ Nueva"
+            onAction={() => abrir("nueva")}
+          />
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator color={colors.gold} style={{ marginTop: spacing.xxl }} />
+            <Loader />
           ) : (
-            <Text style={styles.empty}>Aún no hay promociones. Crea la primera.</Text>
+            <EmptyState
+              title="Todavía no hay promociones"
+              message="Crea la primera y aparecerá en el inicio de tus clientas."
+            />
           )
         }
       />
+
+      <FormModal
+        visible={editing !== null}
+        title={editing === "nueva" ? "Nueva promoción" : "Editar promoción"}
+        subtitle="Aparece en el carrusel del inicio."
+        onClose={() => setEditing(null)}
+        onSubmit={onSubmit}
+        saving={saving}
+      >
+        <Field
+          label="Título"
+          required
+          value={form.title}
+          onChangeText={(t) => setForm((f) => ({ ...f, title: t }))}
+          placeholder="Ej. Botox zona frontal"
+          error={errors.title}
+        />
+        <Field
+          label="Descripción"
+          value={form.description}
+          onChangeText={(t) => setForm((f) => ({ ...f, description: t }))}
+          placeholder="Ej. Dos zonas al precio de una durante agosto"
+          multiline
+        />
+        <Field
+          label="Etiqueta"
+          value={form.badge}
+          onChangeText={(t) => setForm((f) => ({ ...f, badge: t }))}
+          placeholder="Ej. 2X1"
+          helper="Texto corto que se ve como sello sobre la promoción."
+        />
+      </FormModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
-  addBtn: {
-    backgroundColor: colors.ground,
-    borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    marginTop: 6,
-  },
-  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
-  form: {
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: font.size.md,
-    color: colors.ink, fontFamily: fonts.regular },
-  saveBtn: {
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
-  card: {
-    flexDirection: "row",
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    gap: spacing.md,
-  },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  top: { flexDirection: "row", gap: spacing.md },
+  info: { flex: 1 },
   badge: {
+    alignSelf: "flex-start",
     backgroundColor: colors.rose,
     borderRadius: radius.sm,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    marginBottom: 6,
   },
-  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#7a4a40" },
-  cardTitle: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium, flexShrink: 1 },
-  cardDesc: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 4, lineHeight: 18, fontFamily: fonts.regular },
-  delete: { color: colors.danger, fontSize: font.size.xs, marginTop: spacing.sm, fontFamily: fonts.semibold },
+  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#7a4a40", letterSpacing: 0.5 },
+  title: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
+  desc: {
+    fontSize: font.size.sm,
+    color: colors.subtleOnCard,
+    marginTop: 4,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+  },
   switchCol: { alignItems: "center", gap: 4 },
   state: { fontSize: 10, fontFamily: fonts.bold },
-  empty: { textAlign: "center", color: colors.muted, fontSize: font.size.md, marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

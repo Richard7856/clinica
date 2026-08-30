@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BackHeader } from "@/components/BackHeader";
+import { ScreenHeader } from "@/components/ui/Screen";
 import { PromoCard } from "@/components/PromoCard";
 import { listActivePromotions } from "@/lib/catalog";
 import { colors, spacing, font, fonts } from "@/theme";
@@ -29,7 +29,7 @@ export function PromosScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <BackHeader title="Promociones" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Promociones" compact onBack={() => navigation.goBack()} />
       <FlatList
         data={promos}
         keyExtractor={(p) => p.id}

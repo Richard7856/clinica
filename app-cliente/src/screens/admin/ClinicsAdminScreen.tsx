@@ -1,96 +1,105 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  FlatList,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { listClinics, createClinic, deleteClinic } from "@/lib/admin";
-import { colors, spacing, radius, font, fonts } from "@/theme";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, FlatList, StyleSheet } from "react-native";
+import { listClinics, createClinic, updateClinic, deleteClinic } from "@/lib/admin";
+import { ScreenHeader, Card, EmptyState, Loader, useBack } from "@/components/ui/Screen";
+import { RowActions } from "@/components/ui/Controls";
+import { FormModal } from "@/components/ui/FormModal";
+import { Field } from "@/components/form/Field";
+import { useToast, useConfirm } from "@/components/ui/UIProvider";
+import { texto, esValido, type Errors } from "@/lib/validate";
+import { colors, spacing, font, fonts } from "@/theme";
 import type { Clinic } from "@/lib/types";
 
-// Panel admin: sucursales de la clínica. Crear y eliminar.
-// Los aparatos y citas se etiquetan con el id de la clínica.
+type Campo = "name";
+const VACIO = { name: "", address: "", phone: "" };
+
+// Panel admin: sucursales. Los aparatos, tratamientos y citas se etiquetan con
+// el id de la clínica, por eso eliminar una no es inocuo.
 export function ClinicsAdminScreen() {
+  const back = useBack();
   const [items, setItems] = useState<Clinic[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [name, setName] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
-  const [phone, setPhone] = useState<string>("");
-  const [saving, setSaving] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Clinic | "nueva" | null>(null);
+  const [form, setForm] = useState(VACIO);
+  const [errors, setErrors] = useState<Errors<Campo>>({});
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       setItems(await listClinics());
     } catch {
       setItems([]);
+      toast.error("No se pudieron cargar las sucursales.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function onCreate() {
-    if (name.trim().length < 2) {
-      Alert.alert("Falta nombre", "Escribe un nombre para la clínica.");
-      return;
-    }
+  function abrir(c: Clinic | "nueva") {
+    setEditing(c);
+    setErrors({});
+    setForm(
+      c === "nueva"
+        ? VACIO
+        : { name: c.name, address: c.address ?? "", phone: c.phone ?? "" },
+    );
+  }
+
+  async function onSubmit() {
+    const e: Errors<Campo> = { name: texto(form.name, 2, "El nombre") };
+    setErrors(e);
+    if (!esValido(e)) return;
+
     setSaving(true);
     try {
-      await createClinic({
-        name: name.trim(),
-        address: address.trim(),
-        phone: phone.trim(),
-      });
-      setName("");
-      setAddress("");
-      setPhone("");
-      setShowForm(false);
+      const datos = {
+        name: form.name.trim(),
+        address: form.address.trim(),
+        phone: form.phone.trim(),
+      };
+      if (editing === "nueva") await createClinic(datos);
+      else if (editing) await updateClinic(editing.id, datos);
+      setEditing(null);
       await load();
+      toast.success(editing === "nueva" ? "Sucursal creada." : "Sucursal actualizada.");
     } catch {
-      Alert.alert("Error", "No se pudo crear la clínica.");
+      toast.error("No se pudo guardar la sucursal.");
     } finally {
       setSaving(false);
     }
   }
 
-  function onDelete(c: Clinic) {
-    Alert.alert("Eliminar", `¿Eliminar "${c.name}"?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          await deleteClinic(c.id);
-          load();
-        },
-      },
-    ]);
+  async function onDelete(c: Clinic) {
+    const ok = await confirm({
+      title: "Eliminar sucursal",
+      message: `Los tratamientos, aparatos y citas ligados a «${c.name}» se quedarán sin sucursal.`,
+      confirmText: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteClinic(c.id);
+      await load();
+      toast.success("Sucursal eliminada.");
+    } catch {
+      toast.error("No se pudo eliminar.");
+    }
   }
 
   function renderItem({ item }: { item: Clinic }) {
     return (
-      <View style={styles.card}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          {item.address ? (
-            <Text style={styles.meta}>{item.address}</Text>
-          ) : null}
-          {item.phone ? <Text style={styles.meta}>{item.phone}</Text> : null}
-          <Pressable onPress={() => onDelete(item)} hitSlop={8}>
-            <Text style={styles.delete}>Eliminar</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Card>
+        <Text style={styles.title}>{item.name}</Text>
+        {item.address ? <Text style={styles.meta}>{item.address}</Text> : null}
+        {item.phone ? <Text style={styles.meta}>{item.phone}</Text> : null}
+        <RowActions onEdit={() => abrir(item)} onDelete={() => onDelete(item)} />
+      </Card>
     );
   }
 
@@ -100,146 +109,64 @@ export function ClinicsAdminScreen() {
         data={items}
         keyExtractor={(it) => it.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>Clínicas</Text>
-                <Text style={styles.subtitle}>Tus sucursales.</Text>
-              </View>
-              <Pressable
-                style={styles.addBtn}
-                onPress={() => setShowForm((s) => !s)}
-              >
-                <Text style={styles.addBtnText}>
-                  {showForm ? "✕" : "+ Nueva"}
-                </Text>
-              </Pressable>
-            </View>
-
-            {showForm && (
-              <View style={styles.form}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nombre (ej. Sucursal Centro)"
-                  placeholderTextColor={colors.muted}
-                  value={name}
-                  onChangeText={setName}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Dirección"
-                  placeholderTextColor={colors.muted}
-                  value={address}
-                  onChangeText={setAddress}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Teléfono"
-                  placeholderTextColor={colors.muted}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
-                <Pressable
-                  style={styles.saveBtn}
-                  onPress={onCreate}
-                  disabled={saving}
-                >
-                  <Text style={styles.saveText}>
-                    {saving ? "Guardando…" : "Crear clínica"}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
+          <ScreenHeader
+            title="Clínicas"
+            onBack={back}
+            subtitle="Tus sucursales."
+            actionLabel="+ Nueva"
+            onAction={() => abrir("nueva")}
+          />
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator
-              color={colors.gold}
-              style={{ marginTop: spacing.xxl }}
-            />
+            <Loader />
           ) : (
-            <Text style={styles.empty}>Agrega tu primera clínica.</Text>
+            <EmptyState
+              title="Sin sucursales"
+              message="Agrega la primera para poder asignarle tratamientos y aparatos."
+            />
           )
         }
       />
+
+      <FormModal
+        visible={editing !== null}
+        title={editing === "nueva" ? "Nueva sucursal" : "Editar sucursal"}
+        onClose={() => setEditing(null)}
+        onSubmit={onSubmit}
+        saving={saving}
+      >
+        <Field
+          label="Nombre"
+          required
+          value={form.name}
+          onChangeText={(t) => setForm((f) => ({ ...f, name: t }))}
+          placeholder="Ej. Pátzcuaro"
+          error={errors.name}
+        />
+        <Field
+          label="Dirección"
+          value={form.address}
+          onChangeText={(t) => setForm((f) => ({ ...f, address: t }))}
+          placeholder="Ej. Portal Hidalgo 42, Centro"
+        />
+        <Field
+          label="Teléfono"
+          value={form.phone}
+          onChangeText={(t) => setForm((f) => ({ ...f, phone: t }))}
+          placeholder="Ej. 434 342 1180"
+          keyboardType="phone-pad"
+        />
+      </FormModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
-  addBtn: {
-    backgroundColor: colors.ground,
-    borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    marginTop: 6,
-  },
-  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
-  form: {
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: font.size.md,
-    color: colors.ink, fontFamily: fonts.regular },
-  saveBtn: {
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
-  card: {
-    flexDirection: "row",
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    gap: spacing.md,
-  },
-  cardTitle: {
-    fontSize: font.size.lg,
-    color: colors.textOnCard,
-    fontFamily: fonts.medium,
-    flexShrink: 1,
-  },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  title: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
   meta: { fontSize: font.size.sm, color: colors.muted, marginTop: 4, fontFamily: fonts.regular },
-  delete: {
-    color: colors.danger,
-    fontSize: font.size.xs,
-    marginTop: spacing.sm,
-    fontFamily: fonts.semibold,
-  },
-  empty: {
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: font.size.md,
-    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Switch,
 } from "react-native";
 import {
@@ -15,11 +14,13 @@ import {
 } from "@/lib/admin";
 import type { Patient } from "@/lib/types";
 import { Swan } from "@/components/Swan";
+import { ScreenHeader, EmptyState, Loader, useBack } from "@/components/ui/Screen";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Gestión de usuarios (clientes). Permite bloquear el acceso y habilitar la
 // tienda por cliente. Los Switches usan actualización optimista.
 export function UsersAdminScreen() {
+  const back = useBack();
   const [items, setItems] = useState<Patient[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>("");
@@ -161,12 +162,11 @@ export function UsersAdminScreen() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View>
-            <View style={styles.header}>
-              <Text style={styles.title}>Usuarios</Text>
-              <Text style={styles.subtitle}>
-                Restringe acceso y habilita la tienda por cliente.
-              </Text>
-            </View>
+            <ScreenHeader
+              title="Usuarios"
+              onBack={back}
+              subtitle="Restringe acceso y habilita la tienda por cliente."
+            />
             <TextInput
               style={styles.search}
               placeholder="Buscar por nombre o email…"
@@ -180,12 +180,12 @@ export function UsersAdminScreen() {
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator
-              color={colors.gold}
-              style={{ marginTop: spacing.xxl }}
-            />
+            <Loader />
           ) : (
-            <Text style={styles.empty}>No hay usuarios.</Text>
+            <EmptyState
+              title="Sin clientes"
+              message="Aquí aparecerán tus clientas conforme se registren en la app."
+            />
           )
         }
       />
@@ -196,9 +196,6 @@ export function UsersAdminScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header: { paddingTop: spacing.xl, paddingBottom: spacing.md },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   search: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -237,9 +234,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
   },
   state: { fontSize: 10, fontFamily: fonts.bold },
-  empty: {
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: font.size.md,
-    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

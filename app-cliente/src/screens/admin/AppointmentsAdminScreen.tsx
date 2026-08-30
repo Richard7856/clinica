@@ -2,15 +2,16 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
-  Pressable,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
 } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { listAppointments } from "@/lib/admin";
 import { db } from "@/lib/firebase";
-import { colors, spacing, radius, font, fonts } from "@/theme";
+import { ScreenHeader, EmptyState, Loader, Card } from "@/components/ui/Screen";
+import { Segmented, Pill, type SegmentedOption } from "@/components/ui/Controls";
+import { etiquetaDia, etiquetaHora } from "@/lib/schedule";
+import { colors, spacing, font, fonts } from "@/theme";
 import type { Appointment } from "@/lib/types";
 
 // Panel admin: agenda de la clínica (solo vista, demo).
@@ -39,6 +40,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 type Filter = "all" | "today";
+const FILTROS: SegmentedOption<Filter>[] = [
+  { value: "today", label: "Hoy" },
+  { value: "all", label: "Todas" },
+];
 type NameMap = Record<string, string>;
 
 // Lee una colección y arma un mapa id → campo indicado.
@@ -100,30 +105,25 @@ export function AppointmentsAdminScreen() {
     filter === "today" ? items.filter((a) => isToday(a.startAt)) : items;
 
   function renderItem({ item }: { item: Appointment }) {
-    const when = new Date(item.startAt).toLocaleString("es-MX", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const fecha = new Date(item.startAt);
+    const when = `${etiquetaDia(fecha)} · ${etiquetaHora(fecha)}`;
     const status = item.status;
     const label = STATUS_LABEL[status] ?? status;
     const color = STATUS_COLOR[status] ?? colors.muted;
+    // La cabina se asigna en la clínica, así que a menudo viene vacía: en ese
+    // caso no mostramos un guion suelto colgando del tratamiento.
+    const detalle = [treatments[item.treatmentId], cabins[item.cabinId]]
+      .filter(Boolean)
+      .join(" · ");
     return (
-      <View style={styles.card}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.titleRow}>
-            <Text style={styles.when}>{when}</Text>
-            <View style={[styles.badge, { backgroundColor: color }]}>
-              <Text style={styles.badgeText}>{label}</Text>
-            </View>
-          </View>
-          <Text style={styles.patient}>{patients[item.patientId] ?? "—"}</Text>
-          <Text style={styles.meta}>
-            {treatments[item.treatmentId] ?? "—"} · {cabins[item.cabinId] ?? "—"}
-          </Text>
+      <Card>
+        <View style={styles.titleRow}>
+          <Text style={styles.when}>{when}</Text>
+          <Pill label={label} color={color} />
         </View>
-      </View>
+        <Text style={styles.patient}>{patients[item.patientId] ?? "Cliente sin ficha"}</Text>
+        {detalle ? <Text style={styles.meta}>{detalle}</Text> : null}
+      </Card>
     );
   }
 
@@ -136,41 +136,27 @@ export function AppointmentsAdminScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View>
-            <View style={styles.header}>
-              <Text style={styles.title}>Citas</Text>
-              <Text style={styles.subtitle}>Agenda de la clínica.</Text>
-            </View>
-            <View style={styles.filters}>
-              {(["today", "all"] as const).map((f) => {
-                const active = filter === f;
-                return (
-                  <Pressable
-                    key={f}
-                    onPress={() => setFilter(f)}
-                    style={[styles.filterChip, active && styles.filterChipActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        active && styles.filterTextActive,
-                      ]}
-                    >
-                      {f === "today" ? "Hoy" : "Todas"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ScreenHeader title="Citas" subtitle="Agenda de la clínica." />
+            <Segmented
+              options={FILTROS}
+              value={filter}
+              onChange={setFilter}
+              style={{ marginBottom: spacing.lg }}
+            />
           </View>
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator
-              color={colors.gold}
-              style={{ marginTop: spacing.xxl }}
-            />
+            <Loader />
           ) : (
-            <Text style={styles.empty}>Sin citas.</Text>
+            <EmptyState
+              title={filter === "today" ? "No hay citas para hoy" : "Todavía no hay citas"}
+              message={
+                filter === "today"
+                  ? "Cambia a «Todas» para ver la agenda completa."
+                  : "Aquí verás cada cita que pidan tus clientas desde la app."
+              }
+            />
           )
         }
       />
@@ -181,28 +167,6 @@ export function AppointmentsAdminScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header: { paddingTop: spacing.xl, paddingBottom: spacing.md },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
-  filters: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg },
-  filterChip: {
-    backgroundColor: "#efeae0",
-    borderRadius: radius.pill,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.lg,
-  },
-  filterChipActive: { backgroundColor: colors.ground },
-  filterText: { fontSize: font.size.sm, fontFamily: fonts.bold, color: colors.subtleOnCard },
-  filterTextActive: { color: colors.goldSoft },
-  card: {
-    flexDirection: "row",
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -210,8 +174,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   when: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.semibold },
-  badge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#fff" },
   patient: {
     fontSize: font.size.md,
     color: colors.textOnCard,
@@ -219,9 +181,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   meta: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
-  empty: {
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: font.size.md,
-    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

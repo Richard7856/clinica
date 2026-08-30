@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { getAdminKpis, type AdminKpis } from "@/lib/admin";
+import { ScreenHeader, Card, EmptyState } from "@/components/ui/Screen";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Panel financiero / KPIs. Solo lectura: resume ventas, actividad y canjes.
@@ -16,6 +17,14 @@ import { colors, spacing, radius, font, fonts } from "@/theme";
 // Formatea un monto en pesos MX.
 function money(n: number): string {
   return `$${n.toLocaleString("es-MX")}`;
+}
+
+// Versión corta para las etiquetas de la gráfica: "$6,500" no cabe sobre una
+// barra de 40 px, "$6.5k" sí.
+function moneyShort(n: number): string {
+  if (n < 1000) return `$${n}`;
+  const miles = n / 1000;
+  return `$${miles % 1 === 0 ? miles : miles.toFixed(1)}k`;
 }
 
 export function KpiDashboardScreen() {
@@ -58,7 +67,10 @@ export function KpiDashboardScreen() {
   if (!kpis) {
     return (
       <View style={styles.center}>
-        <Text style={styles.empty}>No se pudieron cargar los datos.</Text>
+        <EmptyState
+          title="No se pudieron cargar los datos"
+          message="Revisa tu conexión y desliza hacia abajo para reintentar."
+        />
       </View>
     );
   }
@@ -81,10 +93,7 @@ export function KpiDashboardScreen() {
       }
     >
       {/* Encabezado */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Resumen</Text>
-        <Text style={styles.subtitle}>Cómo va tu clínica.</Text>
-      </View>
+      <ScreenHeader title="Resumen" subtitle="Cómo va tu clínica." />
 
       {/* Fila de tarjetas KPI (grid 2 columnas) */}
       <View style={styles.kpiGrid}>
@@ -109,37 +118,51 @@ export function KpiDashboardScreen() {
       </View>
 
       {/* Gráfica de ventas por día (últimos 7 días) */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Ventas por día</Text>
+      <Card>
+        <View style={styles.chartHead}>
+          <Text style={styles.cardTitle}>Ventas por día</Text>
+          <Text style={styles.chartTotal}>{money(kpis.salesWeek)} esta semana</Text>
+        </View>
         {anySales ? (
-          <View style={styles.chart}>
-            {kpis.salesByDay.map((d, i) => {
-              const h = Math.round((d.total / maxDay) * 90);
-              return (
-                <View key={`${d.label}-${i}`} style={styles.barCol}>
-                  <Text style={styles.barAmount}>
-                    {d.total > 0 ? money(d.total) : ""}
-                  </Text>
-                  <View style={styles.barTrack}>
-                    <View
-                      style={[
-                        styles.bar,
-                        { height: Math.max(d.total > 0 ? 4 : 0, h) },
-                      ]}
-                    />
+          <View>
+            <View style={styles.chart}>
+              {kpis.salesByDay.map((d, i) => {
+                const h = Math.round((d.total / maxDay) * 96);
+                const esMax = d.total === maxDay && d.total > 0;
+                return (
+                  <View key={`${d.label}-${i}`} style={styles.barCol}>
+                    <Text style={[styles.barAmount, esMax && styles.barAmountMax]}>
+                      {d.total > 0 ? moneyShort(d.total) : ""}
+                    </Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.bar,
+                          !esMax && styles.barSoft,
+                          { height: Math.max(d.total > 0 ? 3 : 0, h) },
+                        ]}
+                      />
+                    </View>
                   </View>
+                );
+              })}
+            </View>
+            <View style={styles.baseline} />
+            <View style={styles.chart}>
+              {kpis.salesByDay.map((d, i) => (
+                <View key={`lbl-${d.label}-${i}`} style={styles.barCol}>
                   <Text style={styles.barLabel}>{d.label}</Text>
                 </View>
-              );
-            })}
+              ))}
+            </View>
           </View>
         ) : (
-          <Text style={styles.mutedNote}>Sin ventas esta semana</Text>
+          <Text style={styles.mutedNote}>Sin ventas esta semana.</Text>
         )}
-      </View>
+      </Card>
 
       {/* Tarjeta de actividad */}
-      <View style={styles.card}>
+      <Card>
         <Text style={styles.cardTitle}>Actividad</Text>
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Visitas atendidas</Text>
@@ -165,10 +188,10 @@ export function KpiDashboardScreen() {
             {kpis.cisnesRedeemed.toLocaleString("es-MX")}
           </Text>
         </View>
-      </View>
+      </Card>
 
       {/* Top recompensas */}
-      <View style={styles.card}>
+      <Card>
         <Text style={styles.cardTitle}>Recompensas más canjeadas</Text>
         {kpis.topRewards.length > 0 ? (
           <View style={styles.rewardList}>
@@ -196,7 +219,7 @@ export function KpiDashboardScreen() {
         ) : (
           <Text style={styles.mutedNote}>Aún no hay canjes.</Text>
         )}
-      </View>
+      </Card>
     </ScrollView>
   );
 }
@@ -210,9 +233,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
 
   // Grid de KPIs
   kpiGrid: {
@@ -244,15 +264,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // Tarjeta genérica
-  card: {
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   cardTitle: {
     fontSize: font.size.lg,
     color: colors.textOnCard,
@@ -261,29 +272,47 @@ const styles = StyleSheet.create({
   },
 
   // Gráfica de barras
+  chartHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  chartTotal: { fontSize: font.size.xs, color: colors.goldDeep, fontFamily: fonts.bold },
   chart: {
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent: "space-between",
     gap: spacing.xs,
   },
   barCol: { flex: 1, alignItems: "center" },
   barAmount: {
-    fontSize: 9,
-    color: colors.subtleOnCard,
-    marginBottom: 4,
-    height: 12, fontFamily: fonts.regular },
-  barTrack: { height: 90, justifyContent: "flex-end" },
-  bar: {
-    width: 18,
-    backgroundColor: colors.gold,
-    borderRadius: radius.sm,
+    fontSize: 10,
+    color: colors.muted,
+    marginBottom: 5,
+    height: 13,
+    fontFamily: fonts.semibold,
   },
+  barAmountMax: { color: colors.goldDeep, fontFamily: fonts.extrabold },
+  barTrack: { height: 96, justifyContent: "flex-end", width: "100%", alignItems: "center" },
+  bar: {
+    width: "72%",
+    maxWidth: 34,
+    backgroundColor: colors.gold,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+  },
+  // Los días sin el máximo van en un dorado más tenue: la barra alta se lee
+  // sola, sin necesidad de etiquetar todas.
+  barSoft: { backgroundColor: "rgba(201,162,75,0.42)" },
+  baseline: { height: 1, backgroundColor: colors.cardLine, marginTop: 2 },
   barLabel: {
     fontSize: font.size.xs,
     color: colors.muted,
     marginTop: spacing.sm,
-    textTransform: "capitalize", fontFamily: fonts.regular },
+    textTransform: "capitalize",
+    fontFamily: fonts.regular,
+  },
   mutedNote: {
     fontSize: font.size.sm,
     color: colors.muted,
@@ -328,5 +357,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
     borderRadius: radius.pill,
   },
-  empty: { fontSize: font.size.md, color: colors.muted, fontFamily: fonts.regular },
 });

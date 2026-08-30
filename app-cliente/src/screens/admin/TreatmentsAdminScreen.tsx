@@ -6,7 +6,6 @@ import {
   Pressable,
   Switch,
   TextInput,
-  ActivityIndicator,
   StyleSheet,
 } from "react-native";
 import {
@@ -22,6 +21,7 @@ import { Field } from "@/components/form/Field";
 import { Select } from "@/components/form/Select";
 import { Button } from "@/components/form/Button";
 import { FormModal } from "@/components/ui/FormModal";
+import { ScreenHeader, EmptyState, Loader, useBack } from "@/components/ui/Screen";
 import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { texto, numero, esValido, type Errors } from "@/lib/validate";
 import { treatmentPriceLabel } from "@/lib/types";
@@ -43,6 +43,7 @@ const VACIO = {
 
 // Catálogo de tratamientos: precios, duración y en qué sucursales se ofrecen.
 export function TreatmentsAdminScreen() {
+  const back = useBack();
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -238,17 +239,13 @@ export function TreatmentsAdminScreen() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View>
-            <View style={styles.header}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>Tratamientos</Text>
-                <Text style={styles.subtitle}>
-                  {items.length} en catálogo · precios y sucursales
-                </Text>
-              </View>
-              <Pressable style={styles.addBtn} onPress={abrirNuevo}>
-                <Text style={styles.addBtnText}>+ Nuevo</Text>
-              </Pressable>
-            </View>
+            <ScreenHeader
+              title="Tratamientos"
+              onBack={back}
+              subtitle={`${items.length} en catálogo · precios y sucursales`}
+              actionLabel="+ Nuevo"
+              onAction={abrirNuevo}
+            />
 
             <TextInput
               style={styles.search}
@@ -276,11 +273,16 @@ export function TreatmentsAdminScreen() {
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator color={colors.gold} style={{ marginTop: spacing.xxl }} />
+            <Loader />
           ) : (
-            <Text style={styles.empty}>
-              {q ? "Sin resultados." : "Aún no hay tratamientos."}
-            </Text>
+            <EmptyState
+              title={q ? "Sin resultados" : "Catálogo vacío"}
+              message={
+                q
+                  ? `Ningún tratamiento coincide con «${q}».`
+                  : "Agrega tu primer tratamiento para que las clientas puedan agendarlo."
+              }
+            />
           )
         }
       />
@@ -382,22 +384,6 @@ export function TreatmentsAdminScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.md,
-  },
-  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
-  addBtn: {
-    backgroundColor: colors.ground,
-    borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    marginTop: 6,
-  },
-  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   search: {
     borderWidth: 1,
     borderColor: colors.cardLine,
@@ -443,11 +429,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: spacing.lg, marginTop: spacing.md },
   edit: { color: colors.goldDeep, fontSize: font.size.sm, fontFamily: fonts.bold },
   delete: { color: colors.danger, fontSize: font.size.sm, fontFamily: fonts.semibold },
-  empty: {
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: font.size.md,
-    marginTop: spacing.xxl, fontFamily: fonts.regular },
   multiLabel: {
     fontSize: font.size.xs,
     letterSpacing: 1.2,
