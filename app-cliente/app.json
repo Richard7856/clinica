@@ -40,6 +40,11 @@
           "cameraPermission": "L'Ecrobelle usa la cámara para escanear el QR de las citas."
         }
       ]
-    ]
+    ],
+    "web": {
+      "bundler": "metro",
+      "favicon": "./src/assets/icon.png",
+      "output": "single"
+    }
   }
 }
