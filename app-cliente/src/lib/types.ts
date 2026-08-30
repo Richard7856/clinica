@@ -65,6 +65,32 @@ export interface Clinic {
   active: boolean;
 }
 
+// Tratamiento del catálogo. `clinicIds` define en qué sucursales se ofrece y
+// `cabins` en qué cabina/consultorio se realiza en cada una.
+export interface Treatment {
+  id: string;
+  name: string;
+  category: "facial" | "corporal";
+  price: number; // precio base (o mínimo si hay rango)
+  priceMax?: number; // si el precio es un rango
+  priceNote?: string; // ej. "por unidad"
+  durationMin?: number;
+  clinicIds: string[];
+  cabins?: Record<string, string>; // clinicId → "Cabina 4"
+  active: boolean;
+}
+
+// Formatea el precio de un tratamiento para mostrarlo al cliente.
+export function treatmentPriceLabel(t: {
+  price: number;
+  priceMax?: number;
+  priceNote?: string;
+}): string {
+  const fmt = (n: number) => `$${n.toLocaleString("es-MX")}`;
+  const base = t.priceMax ? `${fmt(t.price)} – ${fmt(t.priceMax)}` : fmt(t.price);
+  return t.priceNote ? `${base} ${t.priceNote}` : base;
+}
+
 // Config pública de la clínica (settings/clinic).
 // Puntos: cada `pointsThreshold` pesos gastados otorgan `cisnesPerThreshold` Cisnes.
 export interface ClinicInfo {

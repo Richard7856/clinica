@@ -15,13 +15,8 @@ import { useAuth } from "@/lib/auth";
 import { requestAppointment, listMyAppointments } from "@/lib/appointments";
 import { sendAppointmentQrEmail } from "@/lib/notify";
 import { colors, spacing, radius, font } from "@/theme";
-import type { Appointment, Clinic } from "@/lib/types";
-
-// Tratamiento mínimo que necesita el selector (id + nombre).
-interface TreatmentOption {
-  id: string;
-  name: string;
-}
+import type { Appointment, Clinic, Treatment } from "@/lib/types";
+import { treatmentPriceLabel } from "@/lib/types";
 
 // Opciones de fecha rápida: fijan startAt a las 12:00 locales.
 type DateKey = "hoy" | "manana" | "tres";
@@ -53,7 +48,7 @@ function statusBadge(status: string): { label: string; bg: string; fg: string } 
 export function CitaScreen() {
   const { patient } = useAuth();
 
-  const [treatments, setTreatments] = useState<TreatmentOption[]>([]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,17 +71,23 @@ export function CitaScreen() {
         ]);
         if (!active) return;
 
-        const treatRows: TreatmentOption[] = treatSnap.docs
+        const treatRows: Treatment[] = treatSnap.docs
           .map((docSnap) => {
             const d = docSnap.data();
             return {
               id: docSnap.id,
               name: (d.name as string) ?? "",
-              active: d.active as boolean | undefined,
+              category: (d.category as Treatment["category"]) ?? "facial",
+              price: typeof d.price === "number" ? d.price : 0,
+              priceMax: typeof d.priceMax === "number" ? d.priceMax : undefined,
+              priceNote: d.priceNote as string | undefined,
+              durationMin: d.durationMin as number | undefined,
+              clinicIds: Array.isArray(d.clinicIds) ? (d.clinicIds as string[]) : [],
+              cabins: (d.cabins as Record<string, string>) ?? undefined,
+              active: d.active !== false,
             };
           })
-          .filter((t) => t.active !== false)
-          .map((t) => ({ id: t.id, name: t.name }));
+          .filter((t) => t.active);
 
         const clinicRows: Clinic[] = clinicSnap.docs.map((docSnap) => {
           const d = docSnap.data();
@@ -121,6 +122,15 @@ export function CitaScreen() {
     const opt = DATE_OPTIONS.find((o) => o.key === dateKey) ?? DATE_OPTIONS[0];
     return isoAtNoon(opt.addDays);
   }, [dateKey]);
+
+  // Solo los tratamientos que se ofrecen en la sucursal elegida. Si un
+  // tratamiento no trae clinicIds (dato viejo), se muestra en todas.
+  const visibleTreatments = useMemo(() => {
+    if (!clinicId) return treatments;
+    return treatments.filter(
+      (t) => t.clinicIds.length === 0 || t.clinicIds.includes(clinicId),
+    );
+  }, [treatments, clinicId]);
 
   async function onRequest() {
     if (!patient) return;
@@ -184,38 +194,22 @@ export function CitaScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Pedir cita</Text>
 
-            <Text style={styles.fieldLabel}>Tratamiento</Text>
-            <View style={styles.chipWrap}>
-              {treatments.length === 0 ? (
-                <Text style={styles.hint}>No hay tratamientos disponibles.</Text>
-              ) : (
-                treatments.map((t) => {
-                  const on = treatmentId === t.id;
-                  return (
-                    <Pressable
-                      key={t.id}
-                      onPress={() => setTreatmentId(t.id)}
-                      style={[styles.chip, on && styles.chipOn]}
-                    >
-                      <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                        {t.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
-
             {clinics.length > 0 && (
               <>
-                <Text style={styles.fieldLabel}>Clínica</Text>
+                <Text style={styles.fieldLabel}>Sucursal</Text>
                 <View style={styles.chipWrap}>
                   {clinics.map((c) => {
                     const on = clinicId === c.id;
                     return (
                       <Pressable
                         key={c.id}
-                        onPress={() => setClinicId(on ? null : c.id)}
+                        onPress={() => {
+                          const next = on ? null : c.id;
+                          setClinicId(next);
+                          // El tratamiento elegido puede no existir en la otra
+                          // sucursal: lo limpiamos para evitar citas inválidas.
+                          setTreatmentId(null);
+                        }}
                         style={[styles.chip, on && styles.chipOn]}
                       >
                         <Text style={[styles.chipText, on && styles.chipTextOn]}>
@@ -226,6 +220,44 @@ export function CitaScreen() {
                   })}
                 </View>
               </>
+            )}
+
+            <Text style={styles.fieldLabel}>Tratamiento</Text>
+            {!clinicId && clinics.length > 0 ? (
+              <Text style={styles.hint}>Elige una sucursal para ver sus tratamientos.</Text>
+            ) : visibleTreatments.length === 0 ? (
+              <Text style={styles.hint}>No hay tratamientos disponibles en esta sucursal.</Text>
+            ) : (
+              (["facial", "corporal"] as const).map((cat) => {
+                const items = visibleTreatments.filter((t) => t.category === cat);
+                if (items.length === 0) return null;
+                return (
+                  <View key={cat}>
+                    <Text style={styles.catLabel}>
+                      {cat === "facial" ? "Faciales" : "Corporales"}
+                    </Text>
+                    <View style={styles.chipWrap}>
+                      {items.map((t) => {
+                        const on = treatmentId === t.id;
+                        return (
+                          <Pressable
+                            key={t.id}
+                            onPress={() => setTreatmentId(t.id)}
+                            style={[styles.chip, on && styles.chipOn]}
+                          >
+                            <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                              {t.name}
+                            </Text>
+                            <Text style={[styles.chipPrice, on && styles.chipPriceOn]}>
+                              {treatmentPriceLabel(t)}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })
             )}
 
             <Text style={styles.fieldLabel}>Fecha</Text>
@@ -374,6 +406,20 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   chipTextOn: { color: colors.goldSoft, fontWeight: "700" },
+  chipPrice: {
+    fontSize: font.size.xs,
+    color: colors.goldDeep,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  chipPriceOn: { color: colors.goldSoft },
+  catLabel: {
+    fontSize: font.size.xs,
+    color: colors.subtleOnCard,
+    fontWeight: "700",
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
   hint: { fontSize: font.size.sm, color: colors.subtleOnCard },
   primaryBtn: {
     backgroundColor: colors.gold,

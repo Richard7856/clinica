@@ -8,39 +8,68 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { colors, spacing, radius, font } from "@/theme";
-import type { ClinicInfo } from "@/lib/types";
+import type { ClinicInfo, Clinic } from "@/lib/types";
 
-// Horarios fijos por ahora.
-// TODO: mover horarios a settings/clinic en Firestore.
-const HOURS: { day: string; hours: string }[] = [
-  { day: "Lunes a Viernes", hours: "10:00 – 21:30" },
-  { day: "Sábado", hours: "8:00 – 18:00" },
-  { day: "Domingo", hours: "Cerrado" },
+// Horarios de respaldo si settings/clinic aún no los tiene.
+const HOURS_FALLBACK: { dia: string; h: string }[] = [
+  { dia: "Lunes", h: "10:00 – 19:00" },
+  { dia: "Martes", h: "10:00 – 19:00" },
+  { dia: "Miércoles", h: "09:00 – 18:00" },
+  { dia: "Jueves", h: "10:00 – 19:00" },
+  { dia: "Viernes", h: "09:00 – 18:00" },
+  { dia: "Sábado", h: "09:00 – 13:00" },
+  { dia: "Domingo", h: "Cerrado" },
 ];
 
 export function LocationScreen() {
   const [info, setInfo] = useState<ClinicInfo | null>(null);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [hours, setHours] = useState(HOURS_FALLBACK);
+  const [priceNote, setPriceNote] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, "settings", "clinic"));
-        if (active && snap.exists()) {
+        const [snap, clinicSnap] = await Promise.all([
+          getDoc(doc(db, "settings", "clinic")),
+          getDocs(collection(db, "clinics")),
+        ]);
+        if (!active) return;
+
+        if (snap.exists()) {
           const d = snap.data();
           setInfo({
             name: (d.name as string) ?? "",
             address: d.address as string | undefined,
             phone: d.phone as string | undefined,
-            pointsLabel: d.pointsLabel as string | undefined,
           });
+          if (Array.isArray(d.horarios) && d.horarios.length > 0) {
+            setHours(d.horarios as { dia: string; h: string }[]);
+          }
+          if (d.priceNote) setPriceNote(d.priceNote as string);
         }
+
+        setClinics(
+          clinicSnap.docs
+            .map((c) => {
+              const x = c.data();
+              return {
+                id: c.id,
+                name: (x.name as string) ?? "",
+                address: x.address as string | undefined,
+                phone: x.phone as string | undefined,
+                active: x.active !== false,
+              };
+            })
+            .filter((c) => c.active),
+        );
       } catch {
-        if (active) setInfo(null);
+        if (active) setClinics([]);
       } finally {
         if (active) setLoading(false);
       }
@@ -52,62 +81,66 @@ export function LocationScreen() {
 
   const name = info?.name || "L'Ecrobelle";
 
-  function callPhone() {
-    if (info?.phone) {
-      Linking.openURL(`tel:${info.phone.replace(/\s+/g, "")}`);
-    }
+  function openMaps(address?: string) {
+    if (!address) return;
+    Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address)}`);
   }
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.title}>{name}</Text>
-        <Text style={styles.subtitle}>Encuéntranos y visítanos.</Text>
+        <Text style={styles.subtitle}>
+          {clinics.length > 1 ? "Nuestras sucursales." : "Encuéntranos y visítanos."}
+        </Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator
-          color={colors.gold}
-          style={{ marginTop: spacing.xl }}
-        />
+        <ActivityIndicator color={colors.gold} style={{ marginTop: spacing.xl }} />
       ) : (
         <>
-          {/* Mapa placeholder — TODO: react-native-maps con coordenadas reales */}
-          <View style={styles.map}>
-            <View style={styles.pin} />
-          </View>
-
-          <View style={styles.card}>
-            {info?.address ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.icon}>📍</Text>
-                <Text style={styles.infoText}>{info.address}</Text>
+          {clinics.length === 0 ? (
+            <Text style={styles.empty}>Sucursales no disponibles.</Text>
+          ) : (
+            clinics.map((c) => (
+              <View key={c.id} style={styles.card}>
+                <Text style={styles.clinicName}>{c.name}</Text>
+                {c.address ? (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.icon}>📍</Text>
+                    <Text style={styles.infoText}>{c.address}</Text>
+                  </View>
+                ) : null}
+                {c.phone ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.infoRow, pressed && { opacity: 0.7 }]}
+                    onPress={() => Linking.openURL(`tel:${c.phone!.replace(/\s+/g, "")}`)}
+                  >
+                    <Text style={styles.icon}>📞</Text>
+                    <Text style={[styles.infoText, styles.phone]}>{c.phone}</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  style={({ pressed }) => [styles.mapBtn, pressed && { opacity: 0.85 }]}
+                  onPress={() => openMaps(c.address)}
+                >
+                  <Text style={styles.mapBtnText}>Ver en el mapa</Text>
+                </Pressable>
               </View>
-            ) : null}
-
-            {info?.phone ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.infoRow,
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={callPhone}
-              >
-                <Text style={styles.icon}>📞</Text>
-                <Text style={[styles.infoText, styles.phone]}>{info.phone}</Text>
-              </Pressable>
-            ) : null}
-          </View>
+            ))
+          )}
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Horarios</Text>
-            {HOURS.map((h) => (
-              <View key={h.day} style={styles.hoursRow}>
-                <Text style={styles.day}>{h.day}</Text>
-                <Text style={styles.hours}>{h.hours}</Text>
+            {hours.map((h) => (
+              <View key={h.dia} style={styles.hoursRow}>
+                <Text style={styles.day}>{h.dia}</Text>
+                <Text style={styles.hours}>{h.h}</Text>
               </View>
             ))}
           </View>
+
+          {priceNote ? <Text style={styles.note}>{priceNote}</Text> : null}
         </>
       )}
     </ScrollView>
@@ -116,41 +149,15 @@ export function LocationScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
   title: {
     fontSize: font.size.display - 8,
     fontWeight: "300",
     color: colors.ink,
     letterSpacing: 0.5,
   },
-  subtitle: {
-    fontSize: font.size.md,
-    color: colors.muted,
-    marginTop: spacing.xs,
-  },
-  map: {
-    height: 150,
-    borderRadius: radius.lg,
-    backgroundColor: colors.panel,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-  },
-  pin: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.gold,
-    borderWidth: 3,
-    borderColor: colors.goldSoft,
-  },
+  subtitle: { fontSize: font.size.md, color: colors.muted, marginTop: spacing.xs },
   card: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -159,24 +166,29 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
+  clinicName: {
+    fontSize: font.size.xl,
+    fontWeight: "600",
+    color: colors.textOnCard,
+    marginBottom: spacing.xs,
+  },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     paddingVertical: spacing.sm,
   },
-  icon: {
-    fontSize: font.size.lg,
+  icon: { fontSize: font.size.lg },
+  infoText: { flex: 1, fontSize: font.size.md, color: colors.textOnCard },
+  phone: { color: colors.goldDeep, fontWeight: "700" },
+  mapBtn: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.ground,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    alignItems: "center",
   },
-  infoText: {
-    flex: 1,
-    fontSize: font.size.md,
-    color: colors.textOnCard,
-  },
-  phone: {
-    color: colors.goldDeep,
-    fontWeight: "700",
-  },
+  mapBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
   sectionTitle: {
     fontSize: font.size.lg,
     fontWeight: "400",
@@ -189,13 +201,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: spacing.sm,
   },
-  day: {
-    fontSize: font.size.md,
-    color: colors.muted,
-  },
-  hours: {
-    fontSize: font.size.md,
-    color: colors.ink,
-    fontWeight: "700",
+  day: { fontSize: font.size.md, color: colors.muted },
+  hours: { fontSize: font.size.md, color: colors.ink, fontWeight: "700" },
+  empty: { color: colors.muted, fontSize: font.size.md, textAlign: "center" },
+  note: {
+    fontSize: font.size.sm,
+    color: colors.subtleOnCard,
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: spacing.xs,
   },
 });
