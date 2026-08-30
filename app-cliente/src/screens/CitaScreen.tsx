@@ -92,6 +92,17 @@ export function CitaScreen() {
   const dias = useMemo(() => proximosDias(14), []);
   const selectedDate = dias[dayIdx] ?? dias[0];
 
+  // Abrir en un día cerrado hacía que lo primero que leyera la clienta fuera
+  // "Cerrado ese día". Al cargar los horarios saltamos al primer día abierto.
+  useEffect(() => {
+    if (!esCerrado(dias[dayIdx] ?? dias[0], horarios)) return;
+    const abierto = dias.findIndex((d) => !esCerrado(d, horarios));
+    if (abierto >= 0) setDayIdx(abierto);
+    // Solo corrige el arranque; si la clienta elige a propósito un día
+    // cerrado, se respeta (dayIdx no está en las dependencias).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [horarios, dias]);
+
   const selectedTreatment = useMemo(
     () => treatments.find((t) => t.id === treatmentId) ?? null,
     [treatments, treatmentId],

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,10 @@ export function RewardsScreen() {
   const points = patient?.points ?? 0;
 
   const [items, setItems] = useState<RewardItem[]>([]);
+  const siguiente = useMemo(
+    () => items.filter((r) => r.cost > points).sort((a, b) => a.cost - b.cost)[0] ?? null,
+    [items, points],
+  );
   const [loading, setLoading] = useState(true);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
 
@@ -144,10 +148,37 @@ export function RewardsScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Recompensas</Text>
-            <Text style={styles.subtitle}>
-              Canjea tus Cisnes por estos beneficios.
-            </Text>
+            <Text style={styles.title}>Tus Cisnes</Text>
+
+            <View style={styles.balance}>
+              <View style={styles.balanceRow}>
+                <Swan size={30} color={colors.goldSoft} />
+                <Text style={styles.balanceNum}>{points}</Text>
+              </View>
+              {siguiente ? (
+                <>
+                  <View style={styles.bar}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        { width: `${Math.min(100, Math.round((points / siguiente.cost) * 100))}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.balanceCap}>
+                    Te faltan {siguiente.cost - points} para «{siguiente.title}»
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.balanceCap}>
+                  {points > 0
+                    ? "Ya alcanzas todas las recompensas del catálogo."
+                    : "Acumula Cisnes en cada visita a la clínica."}
+                </Text>
+              )}
+            </View>
+
+            <Text style={styles.sectionLbl}>QUÉ PUEDES CANJEAR</Text>
           </View>
         }
         ListEmptyComponent={
@@ -187,6 +218,36 @@ const styles = StyleSheet.create({
     fontSize: font.size.md,
     color: colors.muted,
     marginTop: spacing.xs, fontFamily: fonts.regular },
+  balance: {
+    backgroundColor: colors.ground,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+  },
+  balanceRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  balanceNum: { fontSize: 44, color: colors.cream, fontFamily: fonts.display, lineHeight: 50 },
+  bar: {
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: radius.pill,
+    overflow: "hidden",
+    marginTop: spacing.md,
+  },
+  barFill: { height: "100%", backgroundColor: colors.gold },
+  balanceCap: {
+    fontSize: font.size.sm,
+    color: "#b7b1a5",
+    fontFamily: fonts.regular,
+    marginTop: spacing.sm,
+    lineHeight: 18,
+  },
+  sectionLbl: {
+    fontSize: font.size.xs,
+    letterSpacing: 1.5,
+    color: colors.muted,
+    fontFamily: fonts.semibold,
+    marginTop: spacing.xl,
+  },
   row: { gap: spacing.md },
   card: {
     flex: 1,

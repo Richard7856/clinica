@@ -120,3 +120,47 @@ IAM "Cloud Datastore User" en la cuenta de servicio.
   Vercel funcione sin `.env` (la config de cliente es pública por diseño).
 - **Limitación:** el escáner QR (`expo-camera`) carga jsQR desde CDN y tiene
   soporte parcial en navegador; el panel colaborador conviene probarlo en el APK.
+
+## Ver la app con datos locales (emuladores)
+
+Sirve para trabajar el diseño sin depender del proyecto de Firebase en la nube
+y sin tocar datos reales. Requiere Java 21.
+
+```bash
+# 1) En la raíz del repo: levanta Auth + Firestore locales
+firebase emulators:start --project clin-bd81e --only auth,firestore
+
+# 2) Compila la app apuntando al emulador
+cd app-cliente
+EXPO_PUBLIC_USE_EMULATORS=1 EXPO_PUBLIC_EMULATOR_HOST=127.0.0.1 \
+  npx expo export --platform web
+npx serve dist      # o: cd dist && python3 -m http.server 8210
+```
+
+`EXPO_PUBLIC_EMULATOR_HOST` existe porque desde un teléfono físico hay que
+apuntar a la IP de la máquina; en web y simulador basta `127.0.0.1`. Se usa
+`127.0.0.1` y no `localhost` porque el emulador solo escucha en IPv4 y
+`localhost` puede resolver a `::1`.
+
+**Cuidado:** el emulador SÍ aplica `firestore.rules`. Hoy esas reglas están
+desincronizadas con la app móvil (ver abajo), así que la app se ve vacía. Para
+revisar interfaz se pueden abrir las reglas solo en el emulador:
+
+```bash
+curl -X PUT "http://127.0.0.1:8080/emulator/v1/projects/clin-bd81e:securityRules" \
+  -H "Content-Type: application/json" \
+  -d '{"rules":{"files":[{"name":"emu.rules","content":"rules_version = \"2\";\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    match /{document=**} { allow read, write: if true; }\n  }\n}\n"}]}}'
+```
+
+### Pendiente: firestore.rules no cubre la app móvil
+
+Las reglas se escribieron para la web de la clínica. Si se despliegan tal cual,
+la app del cliente deja de funcionar:
+
+- `treatments` y `appointments`: lectura solo para staff — el cliente no puede
+  ver el catálogo, ni sus citas, ni agendar.
+- `clinics` y `storeProducts`: sin reglas, caen en el `default deny`.
+- Los roles no coinciden: las reglas usan `reception` / `therapist`; la app
+  trata a cualquier staff no-admin como `collaborator`.
+
+Hoy no falla porque Firestore está en modo prueba, pero ese modo caduca.

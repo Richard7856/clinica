@@ -18,6 +18,7 @@ import type { Appointment } from "@/lib/types";
 
 // Etiquetas en español de cada estado.
 const STATUS_LABEL: Record<string, string> = {
+  requested: "Solicitada",
   scheduled: "Agendada",
   confirmed: "Confirmada",
   in_progress: "En progreso",
@@ -28,6 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 // Color del badge por estado.
 const STATUS_COLOR: Record<string, string> = {
+  requested: "#7a6cb0",
   scheduled: "#5b7fb0",
   confirmed: colors.ok,
   in_progress: colors.gold,

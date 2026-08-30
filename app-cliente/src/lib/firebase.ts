@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 // Firebase para la app cliente. Apunta al MISMO proyecto que la clínica web,
 // así los Cisnes/recompensas/pacientes son los mismos datos.
@@ -38,4 +38,15 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Emuladores locales (desarrollo y revisión de UI). Se activan con
+// EXPO_PUBLIC_USE_EMULATORS=1 y `firebase emulators:start` en la raíz del repo.
+// EXPO_PUBLIC_EMULATOR_HOST permite apuntar a la IP de la máquina cuando se
+// prueba desde un teléfono físico; en web/simulador basta localhost.
+if (process.env.EXPO_PUBLIC_USE_EMULATORS === "1") {
+  const host = process.env.EXPO_PUBLIC_EMULATOR_HOST ?? "localhost";
+  connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+  connectFirestoreEmulator(db, host, 8080);
+}
+
 export default app;
