@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { UIProvider } from "@/components/ui/UIProvider";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { Tabs } from "@/navigation/Tabs";
 import { AdminTabs } from "@/navigation/AdminTabs";
@@ -31,12 +32,14 @@ function Root() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style="light" />
-        <NavigationContainer>
-          <Root />
-        </NavigationContainer>
-      </AuthProvider>
+      <UIProvider>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <NavigationContainer>
+            <Root />
+          </NavigationContainer>
+        </AuthProvider>
+      </UIProvider>
     </SafeAreaProvider>
   );
 }
