@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { listTodayVisits } from "@/lib/collaborator";
 import type { TodayVisit } from "@/lib/collaborator";
 import type { CitasStackParams } from "@/navigation/CollaboratorTabs";
@@ -135,10 +135,10 @@ const styles = StyleSheet.create({
   header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
   },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
 
   card: {
     flexDirection: "row",
@@ -152,10 +152,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   timeCol: { minWidth: 52 },
-  time: { fontSize: font.size.md, fontWeight: "700", color: colors.goldDeep },
+  time: { fontSize: font.size.md, fontFamily: fonts.bold, color: colors.goldDeep },
   infoCol: { flex: 1 },
-  name: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "500" },
-  meta: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 2 },
+  name: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
+  meta: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 2, fontFamily: fonts.regular },
 
   badge: {
     borderRadius: radius.pill,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
   badgeDone: { backgroundColor: "#e4f0e8" },
   badgePending: { backgroundColor: "#f3e7c8" },
-  badgeText: { fontSize: font.size.xs, fontWeight: "800" },
+  badgeText: { fontSize: font.size.xs, fontFamily: fonts.extrabold },
   badgeTextDone: { color: colors.ok },
   badgeTextPending: { color: colors.goldDeep },
 
@@ -172,6 +172,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

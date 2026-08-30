@@ -32,6 +32,9 @@ export const font = {
   },
 } as const;
 
-export const theme = { colors, spacing, radius, font } as const;
+export { fonts, sansByWeight } from "./typography";
+import { fonts } from "./typography";
+
+export const theme = { colors, spacing, radius, font, fonts } as const;
 export type Theme = typeof theme;
 export { colors };

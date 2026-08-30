@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { ClinicInfo, Clinic } from "@/lib/types";
 
 // Horarios de respaldo si settings/clinic aún no los tiene.
@@ -153,11 +153,11 @@ const styles = StyleSheet.create({
   header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     letterSpacing: 0.5,
   },
-  subtitle: { fontSize: font.size.md, color: colors.muted, marginTop: spacing.xs },
+  subtitle: { fontSize: font.size.md, color: colors.muted, marginTop: spacing.xs, fontFamily: fonts.regular },
   card: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   clinicName: {
     fontSize: font.size.xl,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: colors.textOnCard,
     marginBottom: spacing.xs,
   },
@@ -178,9 +178,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.sm,
   },
-  icon: { fontSize: font.size.lg },
-  infoText: { flex: 1, fontSize: font.size.md, color: colors.textOnCard },
-  phone: { color: colors.goldDeep, fontWeight: "700" },
+  icon: { fontSize: font.size.lg, fontFamily: fonts.regular },
+  infoText: { flex: 1, fontSize: font.size.md, color: colors.textOnCard, fontFamily: fonts.regular },
+  phone: { color: colors.goldDeep, fontFamily: fonts.bold },
   mapBtn: {
     marginTop: spacing.sm,
     backgroundColor: colors.ground,
@@ -188,10 +188,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: "center",
   },
-  mapBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
+  mapBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   sectionTitle: {
     fontSize: font.size.lg,
-    fontWeight: "400",
+    fontFamily: fonts.regular,
     color: colors.textOnCard,
     marginBottom: spacing.sm,
   },
@@ -201,14 +201,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: spacing.sm,
   },
-  day: { fontSize: font.size.md, color: colors.muted },
-  hours: { fontSize: font.size.md, color: colors.ink, fontWeight: "700" },
-  empty: { color: colors.muted, fontSize: font.size.md, textAlign: "center" },
+  day: { fontSize: font.size.md, color: colors.muted, fontFamily: fonts.regular },
+  hours: { fontSize: font.size.md, color: colors.ink, fontFamily: fonts.bold },
+  empty: { color: colors.muted, fontSize: font.size.md, textAlign: "center", fontFamily: fonts.regular },
   note: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
     textAlign: "center",
     fontStyle: "italic",
-    marginTop: spacing.xs,
-  },
+    marginTop: spacing.xs, fontFamily: fonts.regular },
 });

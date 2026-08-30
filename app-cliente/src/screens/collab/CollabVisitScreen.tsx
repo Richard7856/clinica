@@ -14,7 +14,7 @@ import {
   type BarcodeScanningResult,
 } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import { awardVisitPoints } from "@/lib/collaborator";
 import type { CitasStackParams } from "@/navigation/CollaboratorTabs";
@@ -242,15 +242,15 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: font.size.xl,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.textOnCard,
   },
-  email: { fontSize: font.size.sm, color: colors.muted },
+  email: { fontSize: font.size.sm, color: colors.muted, fontFamily: fonts.regular },
   pointsRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   pointsText: {
     fontSize: font.size.sm,
     color: colors.goldDeep,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   metaRow: {
     flexDirection: "row",
@@ -258,11 +258,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.xs,
   },
-  metaLabel: { fontSize: font.size.sm, color: colors.subtleOnCard },
+  metaLabel: { fontSize: font.size.sm, color: colors.subtleOnCard, fontFamily: fonts.regular },
   metaValue: {
     fontSize: font.size.sm,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flexShrink: 1,
     textAlign: "right",
     marginLeft: spacing.md,
@@ -270,8 +270,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: font.size.md,
     color: colors.subtleOnCard,
-    lineHeight: 20,
-  },
+    lineHeight: 20, fontFamily: fonts.regular },
 
   // Aviso cita ya atendida
   okBox: {
@@ -279,11 +278,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.lg,
   },
-  okText: { fontSize: font.size.md, color: colors.ok, fontWeight: "700" },
+  okText: { fontSize: font.size.md, color: colors.ok, fontFamily: fonts.bold },
 
   // QR validado
   verifiedRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  verifiedText: { fontSize: font.size.md, color: colors.ok, fontWeight: "700" },
+  verifiedText: { fontSize: font.size.md, color: colors.ok, fontFamily: fonts.bold },
 
   // Cámara
   cameraWrap: {
@@ -335,8 +334,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
-    marginTop: spacing.sm,
-  },
+    marginTop: spacing.sm, fontFamily: fonts.regular },
   input: {
     borderWidth: 1,
     borderColor: colors.cardLine,
@@ -344,8 +342,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
 
   // Botones
   goldBtn: {
@@ -357,7 +354,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     alignSelf: "stretch",
   },
-  goldBtnText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  goldBtnText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   darkBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.md,
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
   },
   darkBtnText: {
     color: colors.goldSoft,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.md,
   },
   btnDisabled: { opacity: 0.6 },

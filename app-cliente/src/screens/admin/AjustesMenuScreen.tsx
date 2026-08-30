@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { AjustesStackParams } from "@/navigation/AdminTabs";
 
 type Props = NativeStackScreenProps<AjustesStackParams, "AjustesMenu">;
@@ -41,8 +41,8 @@ export function AjustesMenuScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   content: { padding: spacing.lg, paddingTop: spacing.xl },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.md,
   },
-  rowLabel: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "500" },
-  rowDesc: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
-  chevron: { fontSize: 28, color: colors.muted, marginLeft: spacing.md },
+  rowLabel: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
+  rowDesc: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
+  chevron: { fontSize: 28, color: colors.muted, marginLeft: spacing.md, fontFamily: fonts.regular },
 });

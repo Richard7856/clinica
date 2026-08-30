@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { getAdminKpis, type AdminKpis } from "@/lib/admin";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Panel financiero / KPIs. Solo lectura: resume ventas, actividad y canjes.
 // Los datos vienen de getAdminKpis(); se refresca con pull-to-refresh.
@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
 
   // Grid de KPIs
   kpiGrid: {
@@ -233,13 +233,13 @@ const styles = StyleSheet.create({
   kpiLabel: {
     fontSize: font.size.xs,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   kpiValue: {
     fontSize: 28,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     marginTop: spacing.sm,
   },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: font.size.lg,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     marginBottom: spacing.md,
   },
 
@@ -272,8 +272,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.subtleOnCard,
     marginBottom: 4,
-    height: 12,
-  },
+    height: 12, fontFamily: fonts.regular },
   barTrack: { height: 90, justifyContent: "flex-end" },
   bar: {
     width: 18,
@@ -284,13 +283,11 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     color: colors.muted,
     marginTop: spacing.sm,
-    textTransform: "capitalize",
-  },
+    textTransform: "capitalize", fontFamily: fonts.regular },
   mutedNote: {
     fontSize: font.size.sm,
     color: colors.muted,
-    paddingVertical: spacing.sm,
-  },
+    paddingVertical: spacing.sm, fontFamily: fonts.regular },
 
   // Filas de actividad
   statRow: {
@@ -302,8 +299,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.cardLine,
   },
   statRowLast: { borderBottomWidth: 0 },
-  statLabel: { fontSize: font.size.md, color: colors.subtleOnCard },
-  statValue: { fontSize: font.size.md, color: colors.ink, fontWeight: "700" },
+  statLabel: { fontSize: font.size.md, color: colors.subtleOnCard, fontFamily: fonts.regular },
+  statValue: { fontSize: font.size.md, color: colors.ink, fontFamily: fonts.bold },
 
   // Top recompensas
   rewardList: { gap: spacing.md },
@@ -318,9 +315,8 @@ const styles = StyleSheet.create({
     fontSize: font.size.md,
     color: colors.textOnCard,
     flexShrink: 1,
-    marginRight: spacing.sm,
-  },
-  rewardCount: { fontSize: font.size.sm, color: colors.goldDeep, fontWeight: "700" },
+    marginRight: spacing.sm, fontFamily: fonts.regular },
+  rewardCount: { fontSize: font.size.sm, color: colors.goldDeep, fontFamily: fonts.bold },
   rewardTrack: {
     height: 8,
     backgroundColor: colors.cardLine,
@@ -332,5 +328,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
     borderRadius: radius.pill,
   },
-  empty: { fontSize: font.size.md, color: colors.muted },
+  empty: { fontSize: font.size.md, color: colors.muted, fontFamily: fonts.regular },
 });

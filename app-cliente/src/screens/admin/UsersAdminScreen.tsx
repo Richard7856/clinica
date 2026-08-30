@@ -15,7 +15,7 @@ import {
 } from "@/lib/admin";
 import type { Patient } from "@/lib/types";
 import { Swan } from "@/components/Swan";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Gestión de usuarios (clientes). Permite bloquear el acceso y habilitar la
 // tienda por cliente. Los Switches usan actualización optimista.
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   header: { paddingTop: spacing.xl, paddingBottom: spacing.md },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   search: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -208,8 +208,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: font.size.md,
     color: colors.ink,
-    marginBottom: spacing.lg,
-  },
+    marginBottom: spacing.lg, fontFamily: fonts.regular },
   card: {
     flexDirection: "row",
     backgroundColor: colors.cardBg,
@@ -221,27 +220,26 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   info: { flex: 1, justifyContent: "center" },
-  name: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "500" },
-  email: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 2 },
+  name: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
+  email: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 2, fontFamily: fonts.regular },
   cisnesRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     marginTop: spacing.sm,
   },
-  cisnes: { fontSize: font.size.sm, color: colors.goldDeep, fontWeight: "700" },
+  cisnes: { fontSize: font.size.sm, color: colors.goldDeep, fontFamily: fonts.bold },
   controls: { flexDirection: "row", gap: spacing.lg },
   switchCol: { alignItems: "center", gap: 4 },
   switchTitle: {
     fontSize: font.size.xs,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
-  state: { fontSize: 10, fontWeight: "700" },
+  state: { fontSize: 10, fontFamily: fonts.bold },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

@@ -15,7 +15,7 @@ import {
   createRewardItem,
   setRewardItemActive,
 } from "@/lib/admin";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import type { RewardItem } from "@/lib/types";
 
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
   },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   addBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.pill,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: 6,
   },
-  addBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
+  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   form: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -233,15 +233,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   saveBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,
     paddingVertical: 12,
     alignItems: "center",
   },
-  saveText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   card: {
     flexDirection: "row",
     backgroundColor: colors.cardBg,
@@ -255,7 +254,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: font.size.lg,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flexShrink: 1,
   },
   costRow: {
@@ -264,19 +263,17 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: 4,
   },
-  cost: { fontSize: font.size.sm, color: colors.goldDeep, fontWeight: "700" },
+  cost: { fontSize: font.size.sm, color: colors.goldDeep, fontFamily: fonts.bold },
   cardDesc: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
     marginTop: 4,
-    lineHeight: 18,
-  },
+    lineHeight: 18, fontFamily: fonts.regular },
   switchCol: { alignItems: "center", gap: 4 },
-  state: { fontSize: 10, fontWeight: "700" },
+  state: { fontSize: 10, fontFamily: fonts.bold },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

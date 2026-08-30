@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { Swan } from "@/components/Swan";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { useAuth } from "@/lib/auth";
 
 export function LoginScreen() {
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   wordmark: {
-    fontWeight: "200",
+    fontFamily: fonts.display,
     letterSpacing: 6,
     fontSize: 22,
     color: colors.ink,
@@ -111,8 +111,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: font.size.sm,
     marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
+    marginBottom: spacing.xl, fontFamily: fonts.regular },
   field: {
     width: "100%",
     borderBottomWidth: 1,
@@ -120,8 +119,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     fontSize: font.size.md,
     color: colors.ink,
-    marginTop: spacing.md,
-  },
+    marginTop: spacing.md, fontFamily: fonts.regular },
   goldBtn: {
     width: "100%",
     backgroundColor: colors.gold,
@@ -132,9 +130,9 @@ const styles = StyleSheet.create({
   },
   goldBtnText: {
     color: "#231b06",
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.md,
     letterSpacing: 0.5,
   },
-  switch: { color: colors.goldDeep, fontSize: font.size.sm, marginTop: spacing.lg },
+  switch: { color: colors.goldDeep, fontSize: font.size.sm, marginTop: spacing.lg, fontFamily: fonts.regular },
 });

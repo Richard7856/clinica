@@ -12,7 +12,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { Swan } from "@/components/Swan";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { StoreProduct } from "@/lib/types";
 
 export function StoreScreen() {
@@ -163,8 +163,8 @@ export function StoreScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   locked: { alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.md },
-  lockedTitle: { fontSize: font.size.xl, color: colors.ink, fontWeight: "600" },
-  lockedText: { fontSize: font.size.sm, color: colors.muted, textAlign: "center", lineHeight: 20 },
+  lockedTitle: { fontSize: font.size.xl, color: colors.ink, fontFamily: fonts.semibold },
+  lockedText: { fontSize: font.size.sm, color: colors.muted, textAlign: "center", lineHeight: 20, fontFamily: fonts.regular },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
@@ -175,15 +175,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: font.size.md,
     color: colors.muted,
-    marginTop: spacing.xs,
-  },
+    marginTop: spacing.xs, fontFamily: fonts.regular },
   row: { gap: spacing.md },
   card: {
     flex: 1,
@@ -208,13 +207,13 @@ const styles = StyleSheet.create({
   cardBody: { padding: spacing.md, flex: 1 },
   cardTitle: {
     fontSize: font.size.md,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: colors.textOnCard,
     lineHeight: 19,
   },
   price: {
     color: colors.goldDeep,
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
     fontSize: font.size.lg,
     marginTop: 4,
   },
@@ -223,10 +222,9 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     marginTop: 4,
     lineHeight: 16,
-    minHeight: 32,
-  },
-  stock: { color: colors.muted, fontSize: font.size.xs, marginTop: 4 },
-  stockOut: { color: colors.danger, fontWeight: "700" },
+    minHeight: 32, fontFamily: fonts.regular },
+  stock: { color: colors.muted, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.regular },
+  stockOut: { color: colors.danger, fontFamily: fonts.bold },
   buyBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,
@@ -236,7 +234,7 @@ const styles = StyleSheet.create({
   },
   buyText: {
     color: "#231b06",
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.sm,
     letterSpacing: 0.3,
   },
@@ -247,11 +245,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.md,
   },
-  buyTextOff: { color: colors.subtleOnCard, fontWeight: "600", fontSize: font.size.sm },
+  buyTextOff: { color: colors.subtleOnCard, fontFamily: fonts.semibold, fontSize: font.size.sm },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

@@ -16,7 +16,7 @@ import {
   setPromotionActive,
   deletePromotion,
 } from "@/lib/admin";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Promotion } from "@/lib/types";
 
 // Panel admin: control de promociones. Crear, activar/desactivar y eliminar.
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
   },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   addBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.pill,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: 6,
   },
-  addBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
+  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   form: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -235,15 +235,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   saveBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,
     paddingVertical: 12,
     alignItems: "center",
   },
-  saveText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   card: {
     flexDirection: "row",
     backgroundColor: colors.cardBg,
@@ -261,11 +260,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#7a4a40" },
-  cardTitle: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "500", flexShrink: 1 },
-  cardDesc: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 4, lineHeight: 18 },
-  delete: { color: colors.danger, fontSize: font.size.xs, marginTop: spacing.sm, fontWeight: "600" },
+  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#7a4a40" },
+  cardTitle: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium, flexShrink: 1 },
+  cardDesc: { fontSize: font.size.sm, color: colors.subtleOnCard, marginTop: 4, lineHeight: 18, fontFamily: fonts.regular },
+  delete: { color: colors.danger, fontSize: font.size.xs, marginTop: spacing.sm, fontFamily: fonts.semibold },
   switchCol: { alignItems: "center", gap: 4 },
-  state: { fontSize: 10, fontWeight: "700" },
-  empty: { textAlign: "center", color: colors.muted, fontSize: font.size.md, marginTop: spacing.xxl },
+  state: { fontSize: 10, fontFamily: fonts.bold },
+  empty: { textAlign: "center", color: colors.muted, fontSize: font.size.md, marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

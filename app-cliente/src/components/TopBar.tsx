@@ -5,7 +5,7 @@ import Svg, { Path } from "react-native-svg";
 import { Swan } from "./Swan";
 import { CisneBadge } from "./CisneBadge";
 import { useAuth } from "@/lib/auth";
-import { colors, spacing } from "@/theme";
+import { colors, spacing, fonts } from "@/theme";
 
 // Barra superior de marca (cliente): marca + Cisnes + cerrar sesión.
 export function TopBar({ points }: { points: number }) {
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  name: { color: colors.cream, fontWeight: "200", letterSpacing: 3, fontSize: 12 },
+  name: { color: colors.cream, fontFamily: fonts.display, letterSpacing: 3, fontSize: 12 },
   right: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   logout: { padding: 2 },
 });

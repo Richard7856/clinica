@@ -7,7 +7,7 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 export type ButtonVariant = "primary" | "dark" | "ghost" | "danger";
 
@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   inner: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  label: { fontWeight: "700", fontSize: font.size.md, letterSpacing: 0.3 },
+  label: { fontFamily: fonts.bold, fontSize: font.size.md, letterSpacing: 0.3 },
   off: { opacity: 0.45 },
 });

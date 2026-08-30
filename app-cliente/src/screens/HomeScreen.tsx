@@ -10,7 +10,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { Swan } from "@/components/Swan";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Reward, Promotion } from "@/lib/types";
 
 // Umbral de la "próxima recompensa" — meta visual de la barra de progreso.
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   hello: {
     fontSize: font.size.md,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginBottom: spacing.md,
   },
   hero: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     letterSpacing: 2,
     color: colors.goldSoft,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   heroBig: {
     flexDirection: "row",
@@ -195,8 +195,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginVertical: spacing.sm,
   },
-  heroNum: { fontSize: 52, color: colors.cream, fontWeight: "300" },
-  heroCap: { fontSize: font.size.sm, color: "#b7b1a5", textAlign: "center" },
+  heroNum: { fontSize: 52, color: colors.cream, fontFamily: fonts.display },
+  heroCap: { fontSize: font.size.sm, color: "#b7b1a5", textAlign: "center", fontFamily: fonts.regular },
   progress: { width: "100%", marginTop: spacing.lg },
   bar: {
     height: 6,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: spacing.sm,
   },
-  progressTxt: { fontSize: 10.5, color: "#b7b1a5" },
+  progressTxt: { fontSize: 10.5, color: "#b7b1a5", fontFamily: fonts.regular },
   warn: {
     backgroundColor: "rgba(217,138,122,0.12)",
     borderColor: "rgba(217,138,122,0.35)",
@@ -219,16 +219,16 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginTop: spacing.lg,
   },
-  warnText: { color: "#7a4a40", fontSize: font.size.sm, lineHeight: 19 },
+  warnText: { color: "#7a4a40", fontSize: font.size.sm, lineHeight: 19, fontFamily: fonts.regular },
   sectionLbl: {
     fontSize: font.size.xs,
     letterSpacing: 1.5,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
-  empty: { color: colors.muted, fontSize: font.size.sm },
+  empty: { color: colors.muted, fontSize: font.size.sm, fontFamily: fonts.regular },
   promo: {
     backgroundColor: colors.rose,
     borderRadius: radius.md,
@@ -245,12 +245,12 @@ const styles = StyleSheet.create({
   },
   promoBadgeText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
     color: "#7a4a40",
     letterSpacing: 0.5,
   },
-  promoTitle: { fontSize: font.size.lg, fontWeight: "600", color: "#4a2f28" },
-  promoDesc: { fontSize: font.size.sm, color: "#6b5049", marginTop: 3, lineHeight: 18 },
+  promoTitle: { fontSize: font.size.lg, fontFamily: fonts.semibold, color: "#4a2f28" },
+  promoDesc: { fontSize: font.size.sm, color: "#6b5049", marginTop: 3, lineHeight: 18, fontFamily: fonts.regular },
   actRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.gold,
   },
-  actReason: { fontSize: font.size.md, color: colors.ink, fontWeight: "500" },
-  actDate: { fontSize: font.size.xs, color: colors.muted, marginTop: 2 },
-  actPts: { fontSize: font.size.lg, fontWeight: "700" },
+  actReason: { fontSize: font.size.md, color: colors.ink, fontFamily: fonts.medium },
+  actDate: { fontSize: font.size.xs, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
+  actPts: { fontSize: font.size.lg, fontFamily: fonts.bold },
 });

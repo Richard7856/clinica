@@ -6,7 +6,7 @@ import {
   StyleSheet,
   type KeyboardTypeOptions,
 } from "react-native";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Campo de formulario con etiqueta, ayuda y error inline. El error se muestra
 // debajo del campo (no en un Alert) y pinta el borde para ubicarlo de un vistazo.
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     letterSpacing: 1.2,
     color: colors.muted,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginBottom: 6,
     textTransform: "uppercase",
   },
@@ -104,9 +104,9 @@ const styles = StyleSheet.create({
   boxMultiline: { minHeight: 92, alignItems: "flex-start", paddingVertical: spacing.sm },
   boxFocus: { borderColor: colors.gold },
   boxError: { borderColor: colors.danger },
-  input: { flex: 1, fontSize: font.size.md, color: colors.ink, paddingVertical: 10 },
+  input: { flex: 1, fontSize: font.size.md, color: colors.ink, paddingVertical: 10, fontFamily: fonts.regular },
   inputMultiline: { textAlignVertical: "top", minHeight: 72 },
-  affix: { fontSize: font.size.md, color: colors.muted, fontWeight: "600" },
-  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontWeight: "600" },
-  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4 },
+  affix: { fontSize: font.size.md, color: colors.muted, fontFamily: fonts.semibold },
+  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.semibold },
+  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.regular },
 });

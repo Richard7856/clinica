@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Swan } from "./Swan";
-import { colors, radius } from "@/theme";
+import { colors, radius, fonts } from "@/theme";
 
 // Badge del saldo de Cisnes que va en la barra superior.
 export function CisneBadge({ points }: { points: number }) {
@@ -25,5 +25,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: radius.pill,
   },
-  text: { color: colors.goldSoft, fontSize: 12, fontWeight: "700" },
+  text: { color: colors.goldSoft, fontSize: 12, fontFamily: fonts.bold },
 });

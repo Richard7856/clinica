@@ -13,7 +13,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { redeemReward } from "@/lib/rewards";
 import { Swan } from "@/components/Swan";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { RewardItem } from "@/lib/types";
 
 export function RewardsScreen() {
@@ -179,15 +179,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: font.size.md,
     color: colors.muted,
-    marginTop: spacing.xs,
-  },
+    marginTop: spacing.xs, fontFamily: fonts.regular },
   row: { gap: spacing.md },
   card: {
     flex: 1,
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
   cardBody: { padding: spacing.md, flex: 1 },
   cardTitle: {
     fontSize: font.size.md,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: colors.textOnCard,
     lineHeight: 19,
   },
@@ -223,15 +222,14 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: spacing.sm,
   },
-  costText: { color: colors.goldDeep, fontWeight: "800", fontSize: font.size.md },
-  costUnit: { color: colors.goldDeep, fontWeight: "600", fontSize: font.size.xs },
+  costText: { color: colors.goldDeep, fontFamily: fonts.extrabold, fontSize: font.size.md },
+  costUnit: { color: colors.goldDeep, fontFamily: fonts.semibold, fontSize: font.size.xs },
   cardDesc: {
     color: colors.subtleOnCard,
     fontSize: font.size.xs,
     marginTop: 4,
     lineHeight: 16,
-    minHeight: 32,
-  },
+    minHeight: 32, fontFamily: fonts.regular },
   redeemBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.md,
@@ -241,7 +239,7 @@ const styles = StyleSheet.create({
   },
   redeemText: {
     color: colors.goldSoft,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.sm,
     letterSpacing: 0.3,
   },
@@ -254,13 +252,12 @@ const styles = StyleSheet.create({
   },
   redeemTextDisabled: {
     color: colors.subtleOnCard,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     fontSize: font.size.sm,
   },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

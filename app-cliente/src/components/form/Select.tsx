@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 export interface Option {
   value: string;
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     letterSpacing: 1.2,
     color: colors.muted,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginBottom: 6,
     textTransform: "uppercase",
   },
@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
   },
   chipOn: { backgroundColor: colors.ground, borderColor: colors.ground },
   chipError: { borderColor: colors.danger },
-  chipText: { fontSize: font.size.sm, color: colors.textOnCard, fontWeight: "500" },
-  chipTextOn: { color: colors.goldSoft, fontWeight: "700" },
-  chipHint: { fontSize: font.size.xs, color: colors.goldDeep, fontWeight: "700", marginTop: 2 },
+  chipText: { fontSize: font.size.sm, color: colors.textOnCard, fontFamily: fonts.medium },
+  chipTextOn: { color: colors.goldSoft, fontFamily: fonts.bold },
+  chipHint: { fontSize: font.size.xs, color: colors.goldDeep, fontFamily: fonts.bold, marginTop: 2 },
   chipHintOn: { color: colors.goldSoft },
-  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontWeight: "600" },
-  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4 },
+  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.semibold },
+  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.regular },
 });

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { getClinicSettings, savePointsConfig } from "@/lib/admin";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Umbrales de gasto seleccionables (en pesos).
 const THRESHOLDS: number[] = [100, 1000];
@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   form: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   chips: { flexDirection: "row", gap: spacing.sm },
   chip: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   chipActive: { backgroundColor: colors.ground },
-  chipText: { fontSize: font.size.md, fontWeight: "700", color: colors.subtleOnCard },
+  chipText: { fontSize: font.size.md, fontFamily: fonts.bold, color: colors.subtleOnCard },
   chipTextActive: { color: colors.goldSoft },
   input: {
     borderWidth: 1,
@@ -165,19 +165,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   example: {
     fontSize: font.size.sm,
     color: colors.muted,
     lineHeight: 18,
-    fontStyle: "italic",
-  },
+    fontStyle: "italic", fontFamily: fonts.regular },
   saveBtn: {
     backgroundColor: colors.gold,
     borderRadius: radius.md,
     paddingVertical: 12,
     alignItems: "center",
   },
-  saveText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
 });

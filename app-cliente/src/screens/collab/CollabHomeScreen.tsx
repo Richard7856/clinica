@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import { useAuth } from "@/lib/auth";
 
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: "center", gap: spacing.sm },
   greeting: {
     fontSize: font.size.display - 12,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     marginTop: spacing.sm,
     textAlign: "center",
@@ -91,8 +91,7 @@ const styles = StyleSheet.create({
     color: colors.subtleOnCard,
     textAlign: "center",
     lineHeight: 20,
-    paddingHorizontal: spacing.md,
-  },
+    paddingHorizontal: spacing.md, fontFamily: fonts.regular },
   reminder: {
     backgroundColor: colors.ground,
     borderRadius: radius.md,
@@ -103,12 +102,12 @@ const styles = StyleSheet.create({
   reminderText: {
     color: colors.goldSoft,
     fontSize: font.size.sm,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     textAlign: "center",
   },
   stepsHeading: {
     fontSize: font.size.lg,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.ink,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
@@ -134,19 +133,18 @@ const styles = StyleSheet.create({
   },
   stepNumberText: {
     color: "#231b06",
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
     fontSize: font.size.md,
   },
   stepBody: { flex: 1 },
   stepTitle: {
     fontSize: font.size.md,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: colors.textOnCard,
   },
   stepText: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
     marginTop: 2,
-    lineHeight: 18,
-  },
+    lineHeight: 18, fontFamily: fonts.regular },
 });

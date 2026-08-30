@@ -16,7 +16,7 @@ import {
   updateDevice,
   listClinics,
 } from "@/lib/admin";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Device, Clinic } from "@/lib/types";
 
 // Panel admin: aparatos/equipos de la clínica.
@@ -365,8 +365,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
   },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   addBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.pill,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: 6,
   },
-  addBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
+  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   form: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -391,12 +391,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   label: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   saveBtn: {
     backgroundColor: colors.gold,
@@ -411,7 +410,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: "center",
   },
-  saveText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  saveText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   card: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -427,21 +426,19 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: font.size.lg,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flexShrink: 1,
   },
   cardType: {
     fontSize: font.size.sm,
     color: colors.muted,
     marginTop: 4,
-    marginLeft: 18,
-  },
+    marginLeft: 18, fontFamily: fonts.regular },
   metaLine: {
     fontSize: font.size.sm,
     color: colors.muted,
     marginTop: 2,
-    marginLeft: 18,
-  },
+    marginLeft: 18, fontFamily: fonts.regular },
   chips: { gap: spacing.xs, alignItems: "stretch" },
   chip: {
     backgroundColor: "#efeae0",
@@ -450,12 +447,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     alignItems: "center",
   },
-  chipText: { fontSize: 11, fontWeight: "700", color: colors.subtleOnCard },
+  chipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.subtleOnCard },
   chipTextActive: { color: "#fff" },
   editLink: {
     color: colors.goldDeep,
     fontSize: font.size.xs,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginTop: spacing.xs,
   },
   editBox: {
@@ -472,7 +469,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   clinicChipActive: { backgroundColor: colors.ground },
-  clinicChipText: { fontSize: 11, fontWeight: "700", color: colors.subtleOnCard },
+  clinicChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.subtleOnCard },
   clinicChipTextActive: { color: colors.goldSoft },
   editActions: {
     flexDirection: "row",
@@ -481,11 +478,10 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     marginTop: spacing.xs,
   },
-  cancel: { color: colors.muted, fontSize: font.size.sm, fontWeight: "600" },
+  cancel: { color: colors.muted, fontSize: font.size.sm, fontFamily: fonts.semibold },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

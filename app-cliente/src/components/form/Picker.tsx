@@ -8,7 +8,7 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 export interface PickerOption {
   value: string;
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     letterSpacing: 1.2,
     color: colors.muted,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginBottom: 6,
     textTransform: "uppercase",
   },
@@ -185,12 +185,12 @@ const styles = StyleSheet.create({
   },
   triggerError: { borderColor: colors.danger },
   triggerOff: { opacity: 0.5 },
-  triggerText: { fontSize: font.size.md, color: colors.ink, fontWeight: "500" },
-  placeholder: { color: colors.muted, fontWeight: "400" },
-  triggerHint: { fontSize: font.size.xs, color: colors.goldDeep, fontWeight: "700", marginTop: 2 },
-  caret: { color: colors.muted, fontSize: 14 },
-  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontWeight: "600" },
-  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4 },
+  triggerText: { fontSize: font.size.md, color: colors.ink, fontFamily: fonts.medium },
+  placeholder: { color: colors.muted, fontFamily: fonts.regular },
+  triggerHint: { fontSize: font.size.xs, color: colors.goldDeep, fontFamily: fonts.bold, marginTop: 2 },
+  caret: { color: colors.muted, fontSize: 14, fontFamily: fonts.regular },
+  error: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.semibold },
+  helper: { color: colors.subtleOnCard, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.regular },
 
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(13,13,15,0.55)" },
   sheet: {
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: font.size.xl,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: colors.ink,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
@@ -230,12 +230,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   list: { paddingHorizontal: spacing.lg },
   group: {
     fontSize: font.size.xs,
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
     color: colors.muted,
     letterSpacing: 1,
     textTransform: "uppercase",
@@ -252,13 +251,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   rowOn: { backgroundColor: "#fff" },
-  rowText: { fontSize: font.size.md, color: colors.ink },
-  rowHint: { fontSize: font.size.xs, color: colors.goldDeep, fontWeight: "700", marginTop: 2 },
-  check: { color: colors.goldDeep, fontWeight: "800", fontSize: 16 },
+  rowText: { fontSize: font.size.md, color: colors.ink, fontFamily: fonts.regular },
+  rowHint: { fontSize: font.size.xs, color: colors.goldDeep, fontFamily: fonts.bold, marginTop: 2 },
+  check: { color: colors.goldDeep, fontFamily: fonts.extrabold, fontSize: 16 },
   empty: {
     color: colors.muted,
     fontSize: font.size.md,
     textAlign: "center",
-    paddingVertical: spacing.xxl,
-  },
+    paddingVertical: spacing.xxl, fontFamily: fonts.regular },
 });

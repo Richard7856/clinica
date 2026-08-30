@@ -3,6 +3,19 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+import {
+  Newsreader_300Light,
+  Newsreader_400Regular,
+  Newsreader_500Medium,
+} from "@expo-google-fonts/newsreader";
+import {
+  Mulish_400Regular,
+  Mulish_500Medium,
+  Mulish_600SemiBold,
+  Mulish_700Bold,
+  Mulish_800ExtraBold,
+} from "@expo-google-fonts/mulish";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { UIProvider } from "@/components/ui/UIProvider";
 import { LoginScreen } from "@/screens/LoginScreen";
@@ -30,6 +43,26 @@ function Root() {
 }
 
 export default function App() {
+  // Tipografía de marca: Newsreader (títulos) + Mulish (interfaz).
+  const [fontsLoaded] = useFonts({
+    Newsreader_300Light,
+    Newsreader_400Regular,
+    Newsreader_500Medium,
+    Mulish_400Regular,
+    Mulish_500Medium,
+    Mulish_600SemiBold,
+    Mulish_700Bold,
+    Mulish_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.gold} />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <UIProvider>

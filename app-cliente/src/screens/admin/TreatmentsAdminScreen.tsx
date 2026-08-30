@@ -26,7 +26,7 @@ import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { texto, numero, esValido, type Errors } from "@/lib/validate";
 import { treatmentPriceLabel } from "@/lib/types";
 import type { Treatment, Clinic } from "@/lib/types";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 type Campo = "name" | "price" | "durationMin" | "clinics";
 type Filtro = "todos" | "facial" | "corporal";
@@ -388,8 +388,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
   },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   addBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.pill,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: 6,
   },
-  addBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.sm },
+  addBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.sm },
   search: {
     borderWidth: 1,
     borderColor: colors.cardLine,
@@ -407,8 +407,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: font.size.md,
     color: colors.ink,
-    marginBottom: spacing.md,
-  },
+    marginBottom: spacing.md, fontFamily: fonts.regular },
   filtros: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg },
   filtro: {
     borderWidth: 1,
@@ -419,8 +418,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   filtroOn: { backgroundColor: colors.ground, borderColor: colors.ground },
-  filtroText: { fontSize: font.size.sm, color: colors.textOnCard, fontWeight: "500" },
-  filtroTextOn: { color: colors.goldSoft, fontWeight: "700" },
+  filtroText: { fontSize: font.size.sm, color: colors.textOnCard, fontFamily: fonts.medium },
+  filtroTextOn: { color: colors.goldSoft, fontFamily: fonts.bold },
   card: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -430,31 +429,30 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   cardTop: { flexDirection: "row", gap: spacing.md },
-  name: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "500" },
+  name: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
   metaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: 6 },
   badge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
   badgeF: { backgroundColor: colors.rose },
   badgeC: { backgroundColor: "#dbe7f3" },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#4a2f28" },
-  price: { fontSize: font.size.sm, color: colors.goldDeep, fontWeight: "700" },
-  meta: { fontSize: font.size.sm, color: colors.muted },
-  clinics: { fontSize: font.size.xs, color: colors.subtleOnCard, marginTop: 4 },
+  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#4a2f28" },
+  price: { fontSize: font.size.sm, color: colors.goldDeep, fontFamily: fonts.bold },
+  meta: { fontSize: font.size.sm, color: colors.muted, fontFamily: fonts.regular },
+  clinics: { fontSize: font.size.xs, color: colors.subtleOnCard, marginTop: 4, fontFamily: fonts.regular },
   switchCol: { alignItems: "center", gap: 4 },
-  state: { fontSize: 10, fontWeight: "700" },
+  state: { fontSize: 10, fontFamily: fonts.bold },
   actions: { flexDirection: "row", gap: spacing.lg, marginTop: spacing.md },
-  edit: { color: colors.goldDeep, fontSize: font.size.sm, fontWeight: "700" },
-  delete: { color: colors.danger, fontSize: font.size.sm, fontWeight: "600" },
+  edit: { color: colors.goldDeep, fontSize: font.size.sm, fontFamily: fonts.bold },
+  delete: { color: colors.danger, fontSize: font.size.sm, fontFamily: fonts.semibold },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
   multiLabel: {
     fontSize: font.size.xs,
     letterSpacing: 1.2,
     color: colors.muted,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginBottom: 6,
     textTransform: "uppercase",
   },
@@ -468,7 +466,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   chipOn: { backgroundColor: colors.ground, borderColor: colors.ground },
-  chipText: { fontSize: font.size.sm, color: colors.textOnCard, fontWeight: "500" },
-  chipTextOn: { color: colors.goldSoft, fontWeight: "700" },
-  err: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontWeight: "600" },
+  chipText: { fontSize: font.size.sm, color: colors.textOnCard, fontFamily: fonts.medium },
+  chipTextOn: { color: colors.goldSoft, fontFamily: fonts.bold },
+  err: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.semibold },
 });

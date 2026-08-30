@@ -10,7 +10,7 @@ import {
 import { collection, getDocs } from "firebase/firestore";
 import { listAppointments } from "@/lib/admin";
 import { db } from "@/lib/firebase";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Appointment } from "@/lib/types";
 
 // Panel admin: agenda de la clínica (solo vista, demo).
@@ -180,8 +180,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   header: { paddingTop: spacing.xl, paddingBottom: spacing.md },
-  title: { fontSize: font.size.display - 8, fontWeight: "300", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.display - 8, fontFamily: fonts.display, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   filters: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg },
   filterChip: {
     backgroundColor: "#efeae0",
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   filterChipActive: { backgroundColor: colors.ground },
-  filterText: { fontSize: font.size.sm, fontWeight: "700", color: colors.subtleOnCard },
+  filterText: { fontSize: font.size.sm, fontFamily: fonts.bold, color: colors.subtleOnCard },
   filterTextActive: { color: colors.goldSoft },
   card: {
     flexDirection: "row",
@@ -207,20 +207,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.sm,
   },
-  when: { fontSize: font.size.lg, color: colors.textOnCard, fontWeight: "600" },
+  when: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.semibold },
   badge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
+  badgeText: { fontSize: 10, fontFamily: fonts.extrabold, color: "#fff" },
   patient: {
     fontSize: font.size.md,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     marginTop: 6,
   },
-  meta: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  meta: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
 });

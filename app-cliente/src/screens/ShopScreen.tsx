@@ -12,7 +12,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { simulatePurchase } from "@/lib/purchase";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Product } from "@/lib/types";
 
 export function ShopScreen() {
@@ -176,15 +176,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: font.size.md,
     color: colors.muted,
-    marginTop: spacing.xs,
-  },
+    marginTop: spacing.xs, fontFamily: fonts.regular },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -207,21 +206,20 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: font.size.md,
-    fontWeight: "400",
+    fontFamily: fonts.regular,
     color: colors.textOnCard,
   },
   meta: {
     fontSize: font.size.sm,
     color: colors.muted,
-    marginTop: 2,
-  },
+    marginTop: 2, fontFamily: fonts.regular },
   right: {
     alignItems: "flex-end",
     gap: spacing.sm,
   },
   price: {
     fontSize: font.size.md,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     color: colors.textOnCard,
   },
   buyBtn: {
@@ -232,7 +230,7 @@ const styles = StyleSheet.create({
   },
   buyText: {
     color: "#231b06",
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.xs,
     letterSpacing: 0.5,
   },
@@ -240,12 +238,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xxl,
-  },
+    marginTop: spacing.xxl, fontFamily: fonts.regular },
   footer: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.xs,
-    marginTop: spacing.lg,
-  },
+    marginTop: spacing.lg, fontFamily: fonts.regular },
 });

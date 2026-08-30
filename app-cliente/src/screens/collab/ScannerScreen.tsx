@@ -14,7 +14,7 @@ import {
   useCameraPermissions,
   type BarcodeScanningResult,
 } from "expo-camera";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import { lookupAppointment, awardVisitPoints } from "@/lib/collaborator";
 import type { ScannedVisit } from "@/lib/collaborator";
@@ -265,20 +265,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
   },
   subtitle: {
     fontSize: font.size.sm,
     color: colors.muted,
     marginTop: 2,
-    marginBottom: spacing.lg,
-  },
+    marginBottom: spacing.lg, fontFamily: fonts.regular },
 
   // Permiso de cámara
   permTitle: {
     fontSize: font.size.xl,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.ink,
     marginTop: spacing.md,
   },
@@ -287,8 +286,7 @@ const styles = StyleSheet.create({
     color: colors.subtleOnCard,
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: spacing.md,
-  },
+    marginBottom: spacing.md, fontFamily: fonts.regular },
 
   // Cámara
   cameraWrap: {
@@ -353,14 +351,14 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: font.size.xl,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.textOnCard,
   },
   pointsRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   pointsText: {
     fontSize: font.size.sm,
     color: colors.goldDeep,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   metaRow: {
     flexDirection: "row",
@@ -368,11 +366,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.xs,
   },
-  metaLabel: { fontSize: font.size.sm, color: colors.subtleOnCard },
+  metaLabel: { fontSize: font.size.sm, color: colors.subtleOnCard, fontFamily: fonts.regular },
   metaValue: {
     fontSize: font.size.sm,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flexShrink: 1,
     textAlign: "right",
     marginLeft: spacing.md,
@@ -380,8 +378,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
-    marginTop: spacing.md,
-  },
+    marginTop: spacing.md, fontFamily: fonts.regular },
   input: {
     borderWidth: 1,
     borderColor: colors.cardLine,
@@ -389,15 +386,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     fontSize: font.size.md,
-    color: colors.ink,
-  },
+    color: colors.ink, fontFamily: fonts.regular },
   warnBox: {
     backgroundColor: colors.rose,
     borderRadius: radius.md,
     padding: spacing.md,
     marginTop: spacing.sm,
   },
-  warnText: { fontSize: font.size.sm, color: "#7a4a40", fontWeight: "600" },
+  warnText: { fontSize: font.size.sm, color: "#7a4a40", fontFamily: fonts.semibold },
 
   // Botones
   goldBtn: {
@@ -409,7 +405,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     alignSelf: "stretch",
   },
-  goldBtnText: { color: "#231b06", fontWeight: "700", fontSize: font.size.md },
+  goldBtnText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   darkBtn: {
     backgroundColor: colors.ground,
     borderRadius: radius.md,
@@ -417,14 +413,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.sm,
   },
-  darkBtnText: { color: colors.goldSoft, fontWeight: "700", fontSize: font.size.md },
+  darkBtnText: { color: colors.goldSoft, fontFamily: fonts.bold, fontSize: font.size.md },
   btnDisabled: { opacity: 0.6 },
   cancelLink: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.sm,
     marginTop: spacing.md,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
 
   // Éxito
@@ -436,7 +432,7 @@ const styles = StyleSheet.create({
   },
   doneTitle: {
     fontSize: font.size.xl,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.ink,
     textAlign: "center",
     marginTop: spacing.sm,
@@ -444,6 +440,5 @@ const styles = StyleSheet.create({
   doneSub: {
     fontSize: font.size.md,
     color: colors.subtleOnCard,
-    textAlign: "center",
-  },
+    textAlign: "center", fontFamily: fonts.regular },
 });

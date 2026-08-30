@@ -9,7 +9,7 @@ import React, {
 import { View, Text, Modal, Pressable, StyleSheet, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/form/Button";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Avisos y diálogos propios de la marca, en lugar de Alert del sistema.
 //   const toast = useToast();  toast.success("Guardado");
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  toastText: { flex: 1, color: colors.cream, fontSize: font.size.sm, fontWeight: "600" },
+  toastText: { flex: 1, color: colors.cream, fontSize: font.size.sm, fontFamily: fonts.semibold },
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(13,13,15,0.55)",
@@ -171,12 +171,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.xl,
   },
-  dialogTitle: { fontSize: font.size.xl, fontWeight: "700", color: colors.ink },
+  dialogTitle: { fontSize: font.size.xl, fontFamily: fonts.bold, color: colors.ink },
   dialogMsg: {
     fontSize: font.size.md,
     color: colors.subtleOnCard,
     marginTop: spacing.sm,
-    lineHeight: 20,
-  },
+    lineHeight: 20, fontFamily: fonts.regular },
   dialogBtns: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xl },
 });

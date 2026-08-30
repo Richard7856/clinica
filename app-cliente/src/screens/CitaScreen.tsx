@@ -13,7 +13,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { requestAppointment, listMyAppointments } from "@/lib/appointments";
 import { sendAppointmentQrEmail } from "@/lib/notify";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Appointment, Clinic, Treatment } from "@/lib/types";
 import { treatmentPriceLabel } from "@/lib/types";
 import { Picker, type PickerOption } from "@/components/form/Picker";
@@ -374,15 +374,14 @@ const styles = StyleSheet.create({
   header: { paddingTop: spacing.xl, paddingBottom: spacing.lg },
   title: {
     fontSize: font.size.display - 8,
-    fontWeight: "300",
+    fontFamily: fonts.display,
     color: colors.ink,
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: font.size.md,
     color: colors.muted,
-    marginTop: spacing.xs,
-  },
+    marginTop: spacing.xs, fontFamily: fonts.regular },
   card: {
     backgroundColor: colors.cardBg,
     borderWidth: 1,
@@ -393,7 +392,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: font.size.xl,
-    fontWeight: "400",
+    fontFamily: fonts.regular,
     color: colors.textOnCard,
     marginBottom: spacing.sm,
   },
@@ -401,7 +400,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     letterSpacing: 1.5,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
@@ -425,24 +424,24 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: font.size.sm,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
   },
-  chipTextOn: { color: colors.goldSoft, fontWeight: "700" },
+  chipTextOn: { color: colors.goldSoft, fontFamily: fonts.bold },
   chipPrice: {
     fontSize: font.size.xs,
     color: colors.goldDeep,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginTop: 2,
   },
   chipPriceOn: { color: colors.goldSoft },
   catLabel: {
     fontSize: font.size.xs,
     color: colors.subtleOnCard,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  hint: { fontSize: font.size.sm, color: colors.subtleOnCard },
+  hint: { fontSize: font.size.sm, color: colors.subtleOnCard, fontFamily: fonts.regular },
   daysRow: { gap: spacing.sm, paddingVertical: 2, paddingRight: spacing.md },
   day: {
     width: 54,
@@ -459,9 +458,9 @@ const styles = StyleSheet.create({
     fontSize: font.size.xs,
     color: colors.muted,
     textTransform: "capitalize",
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
-  dayNum: { fontSize: font.size.lg, color: colors.ink, fontWeight: "700", marginTop: 2 },
+  dayNum: { fontSize: font.size.lg, color: colors.ink, fontFamily: fonts.bold, marginTop: 2 },
   dayTextOn: { color: colors.goldSoft },
   primaryBtn: {
     backgroundColor: colors.gold,
@@ -472,7 +471,7 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     color: colors.ink,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: font.size.md,
     letterSpacing: 0.5,
   },
@@ -485,14 +484,14 @@ const styles = StyleSheet.create({
   },
   primaryTextDisabled: {
     color: colors.subtleOnCard,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     fontSize: font.size.md,
   },
   sectionLbl: {
     fontSize: font.size.xs,
     letterSpacing: 1.5,
     color: colors.muted,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
@@ -505,7 +504,7 @@ const styles = StyleSheet.create({
   apptDate: {
     fontSize: font.size.md,
     color: colors.textOnCard,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flex: 1,
     textTransform: "capitalize",
   },
@@ -514,7 +513,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  badgeText: { fontSize: font.size.xs, fontWeight: "700", letterSpacing: 0.5 },
+  badgeText: { fontSize: font.size.xs, fontFamily: fonts.bold, letterSpacing: 0.5 },
   qrBox: {
     alignItems: "center",
     marginTop: spacing.lg,
@@ -523,8 +522,7 @@ const styles = StyleSheet.create({
     fontSize: font.size.sm,
     color: colors.subtleOnCard,
     textAlign: "center",
-    marginTop: spacing.md,
-  },
+    marginTop: spacing.md, fontFamily: fonts.regular },
   awarded: {
     marginTop: spacing.md,
     alignItems: "center",
@@ -532,12 +530,11 @@ const styles = StyleSheet.create({
   awardedText: {
     fontSize: font.size.md,
     color: colors.ok,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   empty: {
     textAlign: "center",
     color: colors.muted,
     fontSize: font.size.md,
-    marginTop: spacing.xl,
-  },
+    marginTop: spacing.xl, fontFamily: fonts.regular },
 });

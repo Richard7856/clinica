@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Button } from "@/components/form/Button";
-import { colors, spacing, radius, font } from "@/theme";
+import { colors, spacing, radius, font, fonts } from "@/theme";
 
 // Hoja modal para crear/editar. Reemplaza los formularios sueltos dentro de la
 // lista: enfoca al usuario en una sola tarea y deja el guardar siempre visible.
@@ -87,8 +87,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   header: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  title: { fontSize: font.size.xl + 4, fontWeight: "600", color: colors.ink },
-  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2 },
+  title: { fontSize: font.size.xl + 4, fontFamily: fonts.semibold, color: colors.ink },
+  subtitle: { fontSize: font.size.sm, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   body: { paddingHorizontal: spacing.xl },
   bodyContent: { paddingTop: spacing.md, paddingBottom: spacing.lg },
   footer: {

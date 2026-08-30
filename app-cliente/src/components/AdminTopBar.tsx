@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Swan } from "./Swan";
 import { useAuth } from "@/lib/auth";
-import { colors, spacing } from "@/theme";
+import { colors, spacing, fonts } from "@/theme";
 
 // Barra superior de paneles de staff: marca + etiqueta de rol + cerrar sesión.
 export function AdminTopBar({ roleLabel = "Admin" }: { roleLabel?: string }) {
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  name: { color: colors.cream, fontWeight: "200", letterSpacing: 3, fontSize: 12 },
-  role: { color: colors.goldSoft, fontSize: 10, marginTop: 1 },
+  name: { color: colors.cream, fontFamily: fonts.display, letterSpacing: 3, fontSize: 12 },
+  role: { color: colors.goldSoft, fontSize: 10, marginTop: 1, fontFamily: fonts.regular },
   logout: { padding: 4 },
 });
