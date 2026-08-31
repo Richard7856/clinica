@@ -112,14 +112,186 @@ export function cisnesForAmount(
   return Math.floor(amount / th) * per;
 }
 
-// Promoción / oferta mostrada al cliente y administrada desde el panel admin.
+// ── Promociones ─────────────────────────────────────────────────────────────
+// Una promoción se arma con tres cosas: QUÉ da (tipo + valor), SOBRE QUÉ
+// aplica (alcance) y CUÁNDO vale (condiciones). Antes era solo un título con
+// una etiqueta escrita a mano, así que la app no podía ni ordenar ni caducar
+// nada por su cuenta.
+//
+// `custom` existe para las promociones viejas, que solo traen texto: se
+// siguen mostrando tal cual en vez de perderse.
+export type PromotionType =
+  | "percent" // 20% de descuento
+  | "amount" // $500 de descuento
+  | "nxm" // 2x1, 3x2
+  | "fixed_price" // precio especial cerrado
+  | "gift" // regalo o cortesía
+  | "points" // Cisnes multiplicados
+  | "custom"; // texto libre
+
+export type PromotionScope =
+  | "all" // todo el catálogo
+  | "treatments" // tratamientos elegidos
+  | "category" // todos los faciales o todos los corporales
+  | "store"; // productos de la tienda
+
 export interface Promotion {
   id: string;
+  type: PromotionType;
   title: string;
   description: string;
-  badge?: string; // etiqueta corta, ej. "2x1", "GRATIS"
+  badge?: string; // si se escribe, gana sobre la etiqueta automática
+
+  // Valor, según el tipo
+  percent?: number; // percent
+  amount?: number; // amount (descuento) o fixed_price (precio final)
+  buyQty?: number; // nxm: llevas
+  payQty?: number; // nxm: pagas
+  giftText?: string; // gift: qué se regala
+  multiplier?: number; // points: cuántas veces los Cisnes
+
+  // Alcance
+  scope: PromotionScope;
+  treatmentIds?: string[];
+  category?: "facial" | "corporal";
+  clinicIds?: string[]; // vacío = todas las sucursales
+
+  // Condiciones
+  minSpend?: number;
+  endsAt?: string; // ISO; sin valor = sin vencimiento
+  newClientsOnly?: boolean;
+
   active: boolean;
   createdAt?: string;
+}
+
+// Convierte el documento crudo de Firestore en una Promotion. Vive aquí para
+// que el cliente y el panel lean exactamente lo mismo.
+export function mapPromotion(id: string, d: Record<string, unknown>): Promotion {
+  const num = (v: unknown) => (typeof v === "number" ? v : undefined);
+  const tipo = (d.type as PromotionType) ?? "custom";
+  return {
+    id,
+    type: tipo,
+    title: (d.title as string) ?? "",
+    description: (d.description as string) ?? "",
+    badge: d.badge as string | undefined,
+    percent: num(d.percent),
+    amount: num(d.amount),
+    buyQty: num(d.buyQty),
+    payQty: num(d.payQty),
+    giftText: d.giftText as string | undefined,
+    multiplier: num(d.multiplier),
+    scope: (d.scope as PromotionScope) ?? "all",
+    treatmentIds: Array.isArray(d.treatmentIds) ? (d.treatmentIds as string[]) : undefined,
+    category: d.category as "facial" | "corporal" | undefined,
+    clinicIds: Array.isArray(d.clinicIds) ? (d.clinicIds as string[]) : undefined,
+    minSpend: num(d.minSpend),
+    endsAt: d.endsAt as string | undefined,
+    newClientsOnly: Boolean(d.newClientsOnly),
+    active: d.active !== false,
+    createdAt: d.createdAt as string | undefined,
+  };
+}
+
+export const PROMO_TIPO_LABEL: Record<PromotionType, string> = {
+  percent: "Descuento en porcentaje",
+  amount: "Descuento en pesos",
+  nxm: "2x1 y similares",
+  fixed_price: "Precio especial",
+  gift: "Regalo o cortesía",
+  points: "Cisnes multiplicados",
+  custom: "Texto libre",
+};
+
+const pesos = (n: number) => `$${n.toLocaleString("es-MX")}`;
+
+// Etiqueta corta del sello. Se calcula sola salvo que el admin escriba una.
+export function promoBadge(p: Promotion): string {
+  const manual = p.badge?.trim();
+  if (manual) return manual;
+  switch (p.type) {
+    case "percent":
+      return p.percent ? `−${p.percent}%` : "DESCUENTO";
+    case "amount":
+      return p.amount ? `−${pesos(p.amount)}` : "DESCUENTO";
+    case "nxm":
+      return `${p.buyQty ?? 2}X${p.payQty ?? 1}`;
+    case "fixed_price":
+      return p.amount ? pesos(p.amount) : "PRECIO ESPECIAL";
+    case "gift":
+      return "GRATIS";
+    case "points":
+      return `${p.multiplier ?? 2}X CISNES`;
+    default:
+      return "";
+  }
+}
+
+// Frase que explica el beneficio, para cuando la descripción viene vacía.
+export function promoBeneficio(p: Promotion): string {
+  switch (p.type) {
+    case "percent":
+      return p.percent ? `${p.percent}% de descuento` : "Descuento";
+    case "amount":
+      return p.amount ? `${pesos(p.amount)} de descuento` : "Descuento";
+    case "nxm":
+      return `Llevas ${p.buyQty ?? 2}, pagas ${p.payQty ?? 1}`;
+    case "fixed_price":
+      return p.amount ? `Precio especial: ${pesos(p.amount)}` : "Precio especial";
+    case "gift":
+      return p.giftText?.trim() ? `De regalo: ${p.giftText.trim()}` : "Incluye un regalo";
+    case "points":
+      return `${p.multiplier ?? 2}× Cisnes en esta compra`;
+    default:
+      return "";
+  }
+}
+
+// Letra chica: sobre qué aplica y hasta cuándo. Cada punto es una línea.
+export function promoCondiciones(
+  p: Promotion,
+  nombres?: { tratamientos?: Record<string, string>; clinicas?: Record<string, string> },
+): string[] {
+  const out: string[] = [];
+
+  if (p.scope === "treatments" && p.treatmentIds?.length) {
+    const lista = p.treatmentIds
+      .map((id) => nombres?.tratamientos?.[id])
+      .filter(Boolean) as string[];
+    if (lista.length) out.push(`Aplica en: ${lista.join(", ")}`);
+  } else if (p.scope === "category" && p.category) {
+    out.push(p.category === "facial" ? "Aplica en tratamientos faciales" : "Aplica en tratamientos corporales");
+  } else if (p.scope === "store") {
+    out.push("Aplica en productos de la tienda");
+  }
+
+  if (p.clinicIds?.length) {
+    const lista = p.clinicIds.map((id) => nombres?.clinicas?.[id]).filter(Boolean) as string[];
+    if (lista.length) out.push(`Solo en ${lista.join(" y ")}`);
+  }
+
+  if (p.minSpend && p.minSpend > 0) out.push(`En compras desde ${pesos(p.minSpend)}`);
+  if (p.newClientsOnly) out.push("Solo para clientas nuevas");
+
+  if (p.endsAt) {
+    const d = new Date(p.endsAt);
+    if (!Number.isNaN(d.getTime())) {
+      out.push(
+        `Vigente hasta el ${d.toLocaleDateString("es-MX", { day: "numeric", month: "long" })}`,
+      );
+    }
+  }
+  return out;
+}
+
+// Una promoción vencida se deja de mostrar sola: no depende de que alguien
+// se acuerde de apagarla en el panel.
+export function promoVigente(p: Promotion, ahora = new Date()): boolean {
+  if (!p.endsAt) return true;
+  const fin = new Date(p.endsAt);
+  if (Number.isNaN(fin.getTime())) return true;
+  return fin.getTime() >= ahora.getTime();
 }
 
 // Aparato / equipo. Se asigna a una clínica y tiene horarios.

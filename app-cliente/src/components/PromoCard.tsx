@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { colors, spacing, radius, font, fonts } from "@/theme";
-import type { Promotion } from "@/lib/types";
+import { promoBadge, promoBeneficio, promoCondiciones, type Promotion } from "@/lib/types";
 
 // Tarjeta de promoción. `rail` es la versión angosta del carrusel de Inicio;
 // `full` la de ancho completo del listado. Alternamos rosa/arena por índice
@@ -10,12 +10,19 @@ export function PromoCard({
   promo,
   variant = "full",
   index = 0,
+  nombres,
 }: {
   promo: Promotion;
   variant?: "rail" | "full";
   index?: number;
+  // Mapas id → nombre para poder escribir "Aplica en: Botox, Hydrafacial".
+  nombres?: { tratamientos?: Record<string, string>; clinicas?: Record<string, string> };
 }) {
   const arena = index % 2 === 1;
+  const badge = promoBadge(promo);
+  // Si nadie escribió descripción, la frase del beneficio la sustituye.
+  const detalle = promo.description?.trim() || promoBeneficio(promo);
+  const condiciones = variant === "full" ? promoCondiciones(promo, nombres) : [];
   return (
     <View
       style={[
@@ -24,9 +31,9 @@ export function PromoCard({
         arena && styles.arena,
       ]}
     >
-      {promo.badge ? (
+      {badge ? (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{promo.badge}</Text>
+          <Text style={styles.badgeText}>{badge}</Text>
         </View>
       ) : null}
       <Text
@@ -35,14 +42,16 @@ export function PromoCard({
       >
         {promo.title}
       </Text>
-      {promo.description ? (
-        <Text
-          style={styles.desc}
-          numberOfLines={variant === "rail" ? 2 : undefined}
-        >
-          {promo.description}
+      {detalle ? (
+        <Text style={styles.desc} numberOfLines={variant === "rail" ? 2 : undefined}>
+          {detalle}
         </Text>
       ) : null}
+      {condiciones.map((c) => (
+        <Text key={c} style={styles.condicion}>
+          · {c}
+        </Text>
+      ))}
     </View>
   );
 }
@@ -75,6 +84,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: "#4a2f28",
     lineHeight: 21,
+  },
+  condicion: {
+    fontSize: font.size.xs,
+    fontFamily: fonts.regular,
+    color: "#7b5f57",
+    marginTop: 3,
+    lineHeight: 16,
   },
   desc: {
     fontSize: font.size.sm,

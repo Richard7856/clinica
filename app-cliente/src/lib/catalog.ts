@@ -5,6 +5,7 @@
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Treatment, Clinic, Promotion } from "./types";
+import { mapPromotion, promoVigente } from "./types";
 import { HORARIOS_DEFAULT, type Horario } from "./schedule";
 
 export async function listTreatments(): Promise<Treatment[]> {
@@ -49,17 +50,9 @@ export async function listActivePromotions(): Promise<Promotion[]> {
     query(collection(db, "promotions"), where("active", "==", true)),
   );
   return snap.docs
-    .map((docSnap) => {
-      const d = docSnap.data();
-      return {
-        id: docSnap.id,
-        title: (d.title as string) ?? "",
-        description: (d.description as string) ?? "",
-        badge: d.badge as string | undefined,
-        active: true,
-        createdAt: d.createdAt as string | undefined,
-      };
-    })
+    .map((d) => mapPromotion(d.id, d.data() as Record<string, unknown>))
+    // Una promoción vencida deja de verse sola, sin que nadie la apague.
+    .filter((p) => promoVigente(p))
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 }
 

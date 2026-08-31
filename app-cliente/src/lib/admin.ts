@@ -22,6 +22,7 @@ import type {
   ClinicInfo,
   Patient,
 } from "./types";
+import { mapPromotion } from "./types";
 
 // Operaciones del panel admin sobre Firestore. El staff tiene permisos de
 // escritura (reglas de la clínica). Todo directo, sin backend intermedio.
@@ -29,19 +30,48 @@ import type {
 // ── Promociones (colección nueva `promotions`) ──────────────────────────────
 export async function listPromotions(): Promise<Promotion[]> {
   const snap = await getDocs(collection(db, "promotions"));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Promotion, "id">) }));
+  return snap.docs
+    .map((d) => mapPromotion(d.id, d.data() as Record<string, unknown>))
+    .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 }
 
-export async function createPromotion(
-  input: Pick<Promotion, "title" | "description" | "badge">,
-): Promise<void> {
-  await addDoc(collection(db, "promotions"), {
+// Lo que el formulario del panel envía. Se omite todo lo que no aplica al
+// tipo elegido para no dejar basura en el documento (un "percent" colgando en
+// una promo de 2x1 confunde a quien lea los datos después).
+export type PromotionInput = Omit<Promotion, "id" | "active" | "createdAt">;
+
+function promoDoc(input: PromotionInput): Record<string, unknown> {
+  const doc: Record<string, unknown> = {
+    type: input.type,
     title: input.title,
     description: input.description,
     badge: input.badge ?? "",
+    scope: input.scope,
+    clinicIds: input.clinicIds ?? [],
+    newClientsOnly: Boolean(input.newClientsOnly),
+    // null y no undefined: Firestore ignora undefined, así que al editar no
+    // se borraría un valor que el admin acaba de quitar.
+    percent: input.type === "percent" ? input.percent ?? null : null,
+    amount:
+      input.type === "amount" || input.type === "fixed_price" ? input.amount ?? null : null,
+    buyQty: input.type === "nxm" ? input.buyQty ?? null : null,
+    payQty: input.type === "nxm" ? input.payQty ?? null : null,
+    giftText: input.type === "gift" ? input.giftText ?? "" : "",
+    multiplier: input.type === "points" ? input.multiplier ?? null : null,
+    treatmentIds: input.scope === "treatments" ? input.treatmentIds ?? [] : [],
+    category: input.scope === "category" ? input.category ?? null : null,
+    minSpend: input.minSpend ?? null,
+    endsAt: input.endsAt ?? null,
+    updatedAt: serverTimestamp(),
+  };
+  return doc;
+}
+
+export async function createPromotion(input: PromotionInput): Promise<void> {
+  await addDoc(collection(db, "promotions"), {
+    ...promoDoc(input),
     active: true,
     createdAt: new Date().toISOString(),
-    updatedAt: serverTimestamp(),
   });
 }
 
@@ -49,16 +79,8 @@ export async function setPromotionActive(id: string, active: boolean): Promise<v
   await updateDoc(doc(db, "promotions", id), { active, updatedAt: serverTimestamp() });
 }
 
-export async function updatePromotion(
-  id: string,
-  input: Pick<Promotion, "title" | "description" | "badge">,
-): Promise<void> {
-  await updateDoc(doc(db, "promotions", id), {
-    title: input.title,
-    description: input.description,
-    badge: input.badge ?? "",
-    updatedAt: serverTimestamp(),
-  });
+export async function updatePromotion(id: string, input: PromotionInput): Promise<void> {
+  await updateDoc(doc(db, "promotions", id), promoDoc(input));
 }
 
 export async function deletePromotion(id: string): Promise<void> {

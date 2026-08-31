@@ -18,6 +18,7 @@ import {
   type TreatmentInput,
 } from "@/lib/admin";
 import { Field } from "@/components/form/Field";
+import { MultiSelect } from "@/components/form/MultiSelect";
 import { Select } from "@/components/form/Select";
 import { Button } from "@/components/form/Button";
 import { FormModal } from "@/components/ui/FormModal";
@@ -351,31 +352,15 @@ export function TreatmentsAdminScreen() {
           helper="Define los horarios disponibles al agendar."
         />
 
-        <Text style={styles.multiLabel}>
-          Sucursales <Text style={{ color: colors.goldDeep }}>*</Text>
-        </Text>
-        <View style={styles.chipWrap}>
-          {clinics.map((c) => {
-            const on = form.clinicIds.includes(c.id);
-            return (
-              <Pressable
-                key={c.id}
-                onPress={() =>
-                  set(
-                    "clinicIds",
-                    on
-                      ? form.clinicIds.filter((x) => x !== c.id)
-                      : [...form.clinicIds, c.id],
-                  )
-                }
-                style={[styles.chip, on && styles.chipOn]}
-              >
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{c.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        {errors.clinics ? <Text style={styles.err}>{errors.clinics}</Text> : null}
+        <MultiSelect
+          label="Sucursales"
+          required
+          options={clinics.map((c) => ({ value: c.id, label: c.name }))}
+          values={form.clinicIds}
+          onChange={(v) => set("clinicIds", v)}
+          error={errors.clinics}
+          empty="Primero crea una sucursal."
+        />
       </FormModal>
     </View>
   );
@@ -429,25 +414,4 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: spacing.lg, marginTop: spacing.md },
   edit: { color: colors.goldDeep, fontSize: font.size.sm, fontFamily: fonts.bold },
   delete: { color: colors.danger, fontSize: font.size.sm, fontFamily: fonts.semibold },
-  multiLabel: {
-    fontSize: font.size.xs,
-    letterSpacing: 1.2,
-    color: colors.muted,
-    fontFamily: fonts.bold,
-    marginBottom: 6,
-    textTransform: "uppercase",
-  },
-  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.cardLine,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: "#fff",
-  },
-  chipOn: { backgroundColor: colors.ground, borderColor: colors.ground },
-  chipText: { fontSize: font.size.sm, color: colors.textOnCard, fontFamily: fonts.medium },
-  chipTextOn: { color: colors.goldSoft, fontFamily: fonts.bold },
-  err: { color: colors.danger, fontSize: font.size.xs, marginTop: 4, fontFamily: fonts.semibold },
 });
