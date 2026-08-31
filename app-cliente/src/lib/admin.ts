@@ -315,85 +315,247 @@ export async function setPatientStoreEnabled(id: string, storeEnabled: boolean):
 }
 
 // ── KPIs / panel financiero ─────────────────────────────────────────────────
-export interface AdminKpis {
-  totalSales: number;
-  salesToday: number;
-  salesWeek: number;
-  salesByDay: { label: string; total: number }[]; // últimos 7 días
-  visits: number; // citas con puntos asignados (atendidas)
-  requested: number; // citas solicitadas pendientes
-  cisnesEarned: number;
-  cisnesRedeemed: number;
-  topRewards: { title: string; count: number }[];
-  totalPatients: number;
+// Firestore puede devolver Timestamp o string; normalizamos a ISO string.
+function normalizeDate(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "toDate" in v) {
+    return (v as { toDate: () => Date }).toDate().toISOString();
+  }
+  return new Date().toISOString();
 }
 
+// Igual que normalizeDate pero devuelve Date. Fecha 0 = valor ausente.
 function dateOf(v: unknown): Date {
   if (typeof v === "string") return new Date(v);
   if (v && typeof v === "object" && "toDate" in v) return (v as { toDate: () => Date }).toDate();
   return new Date(0);
 }
+
+// Clave de día LOCAL. Comparar en UTC hacía desaparecer las citas de la tarde.
 function localDay(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export async function getAdminKpis(): Promise<AdminKpis> {
-  const [paySnap, aptSnap, rewSnap, redSnap, patSnap] = await Promise.all([
+export type KpiPeriodo = "hoy" | "semana" | "mes";
+
+export interface AdminKpis {
+  periodo: KpiPeriodo;
+  periodoLabel: string; // "hoy", "los últimos 7 días"…
+  // Dinero
+  ingresos: number;
+  ingresosPrevio: number; // mismo lapso inmediatamente anterior
+  cobros: number;
+  ticketPromedio: number;
+  serie: { label: string; total: number }[];
+  serieTitulo: string;
+  serieVentana: string;
+  porMetodo: { label: string; total: number }[];
+  // Agenda
+  hoyTotal: number;
+  hoyPorConfirmar: number;
+  hoyAtendidas: number;
+  proximas: { hora: string; paciente: string; tratamiento: string }[];
+  porConfirmar: number; // solicitudes a futuro sin confirmar
+  // Catálogo y clientes
+  topTratamientos: { name: string; count: number }[];
+  totalPatients: number;
+  nuevosClientes: number;
+  // Lealtad
+  cisnesEarned: number;
+  cisnesRedeemed: number;
+  topRewards: { title: string; count: number }[];
+}
+
+// Etiquetas de los métodos de pago. El esquema de la web usa el enum en
+// inglés; los datos capturados a mano a veces vienen ya en español.
+const METODO_LABEL: Record<string, string> = {
+  cash: "Efectivo",
+  efectivo: "Efectivo",
+  transfer: "Transferencia",
+  transferencia: "Transferencia",
+  card: "Tarjeta",
+  tarjeta: "Tarjeta",
+  other: "Otro",
+  otro: "Otro",
+};
+
+const PERIODO_DIAS: Record<KpiPeriodo, number> = { hoy: 1, semana: 7, mes: 30 };
+const PERIODO_LABEL: Record<KpiPeriodo, string> = {
+  hoy: "hoy",
+  semana: "los últimos 7 días",
+  mes: "los últimos 30 días",
+};
+
+// Inicio del día local hace `atras` días.
+function diaInicio(atras: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - atras);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export async function getAdminKpis(periodo: KpiPeriodo = "mes"): Promise<AdminKpis> {
+  const [paySnap, aptSnap, rewSnap, redSnap, patSnap, treatSnap] = await Promise.all([
     getDocs(collection(db, "payments")),
     getDocs(collection(db, "appointments")),
     getDocs(collection(db, "rewards")),
     getDocs(collection(db, "redemptions")),
     getDocs(collection(db, "patients")),
+    getDocs(collection(db, "treatments")),
   ]);
 
-  const today = localDay(new Date());
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 6);
-  weekAgo.setHours(0, 0, 0, 0);
+  const dias = PERIODO_DIAS[periodo];
+  const desde = diaInicio(dias - 1); // incluye hoy
+  const desdePrevio = diaInicio(dias * 2 - 1);
+  const hoyKey = localDay(new Date());
 
-  // Ventas = pagos + montos gastados capturados en visitas escaneadas.
-  const sales: { date: Date; amount: number }[] = [];
+  // ── Ventas ───────────────────────────────────────────────────────────────
+  // Un cobro puede venir de `payments` (capturado en recepción) o del monto
+  // que el colaborador escribe al escanear el QR de una visita.
+  const ventas: { date: Date; amount: number; metodo: string }[] = [];
   paySnap.docs.forEach((d) => {
     const x = d.data();
-    if (typeof x.amount === "number") sales.push({ date: dateOf(x.date), amount: x.amount });
+    if (typeof x.amount === "number")
+      ventas.push({
+        date: dateOf(x.date),
+        amount: x.amount,
+        metodo: METODO_LABEL[String(x.method ?? "").toLowerCase()] ?? "Otro",
+      });
   });
   aptSnap.docs.forEach((d) => {
     const x = d.data();
     if (x.pointsAwarded && typeof x.amountSpent === "number")
-      sales.push({ date: dateOf(x.updatedAt ?? x.startAt), amount: x.amountSpent });
+      ventas.push({
+        date: dateOf(x.updatedAt ?? x.startAt),
+        amount: x.amountSpent,
+        metodo: "En visita",
+      });
   });
 
-  let totalSales = 0, salesToday = 0, salesWeek = 0;
-  const byDay = new Map<string, number>();
-  for (const s of sales) {
-    totalSales += s.amount;
-    const dk = localDay(s.date);
-    if (dk === today) salesToday += s.amount;
-    if (s.date >= weekAgo) { salesWeek += s.amount; byDay.set(dk, (byDay.get(dk) ?? 0) + s.amount); }
+  let ingresos = 0;
+  let ingresosPrevio = 0;
+  let cobros = 0;
+  const porMetodoMap = new Map<string, number>();
+  for (const v of ventas) {
+    if (v.date >= desde) {
+      ingresos += v.amount;
+      cobros++;
+      porMetodoMap.set(v.metodo, (porMetodoMap.get(v.metodo) ?? 0) + v.amount);
+    } else if (v.date >= desdePrevio) {
+      ingresosPrevio += v.amount;
+    }
   }
-  // últimos 7 días en orden
-  const salesByDay: { label: string; total: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dk = localDay(d);
-    salesByDay.push({ label: d.toLocaleDateString("es-MX", { weekday: "short" }), total: byDay.get(dk) ?? 0 });
+  const porMetodo = [...porMetodoMap.entries()]
+    .map(([label, total]) => ({ label, total }))
+    .sort((a, b) => b.total - a.total);
+
+  // ── Serie temporal ───────────────────────────────────────────────────────
+  // En "mes" agrupamos por semana: treinta barras no caben en un teléfono.
+  const serie: { label: string; total: number }[] = [];
+  let serieTitulo: string;
+  let serieVentana: string;
+  if (periodo === "mes") {
+    serieTitulo = "Ventas por semana";
+    serieVentana = "Últimas 6 semanas";
+    for (let w = 5; w >= 0; w--) {
+      const ini = diaInicio(w * 7 + 6);
+      const fin = diaInicio(w * 7 - 1);
+      const total = ventas
+        .filter((v) => v.date >= ini && v.date < fin)
+        .reduce((a, v) => a + v.amount, 0);
+      serie.push({
+        label: `${ini.getDate()}/${ini.getMonth() + 1}`,
+        total,
+      });
+    }
+  } else {
+    serieTitulo = "Ventas por día";
+    serieVentana = "Últimos 7 días";
+    const porDia = new Map<string, number>();
+    ventas.forEach((v) => porDia.set(localDay(v.date), (porDia.get(localDay(v.date)) ?? 0) + v.amount));
+    for (let i = 6; i >= 0; i--) {
+      const d = diaInicio(i);
+      serie.push({
+        label: d.toLocaleDateString("es-MX", { weekday: "short" }),
+        total: porDia.get(localDay(d)) ?? 0,
+      });
+    }
   }
 
-  let visits = 0, requested = 0;
+  // ── Agenda ───────────────────────────────────────────────────────────────
+  const nombrePaciente = new Map<string, string>();
+  patSnap.docs.forEach((d) => nombrePaciente.set(d.id, (d.data().fullName as string) ?? ""));
+  const nombreTratamiento = new Map<string, string>();
+  treatSnap.docs.forEach((d) => nombreTratamiento.set(d.id, (d.data().name as string) ?? ""));
+
+  const ahora = new Date();
+  let hoyTotal = 0;
+  let hoyPorConfirmar = 0;
+  let hoyAtendidas = 0;
+  let porConfirmar = 0;
+  const proximasRaw: { fecha: Date; paciente: string; tratamiento: string }[] = [];
+  const conteoTratamiento = new Map<string, number>();
+
   aptSnap.docs.forEach((d) => {
     const x = d.data();
-    if (x.pointsAwarded) visits++;
-    else if ((x.status ?? "") === "requested") requested++;
+    const inicio = dateOf(x.startAt);
+    const estado = String(x.status ?? "");
+    const esHoy = localDay(inicio) === hoyKey;
+
+    if (esHoy) {
+      hoyTotal++;
+      if (estado === "requested") hoyPorConfirmar++;
+      if (x.pointsAwarded || estado === "completed") hoyAtendidas++;
+    }
+    if (estado === "requested" && inicio >= ahora) porConfirmar++;
+    if (esHoy && inicio >= ahora && estado !== "cancelled" && !x.pointsAwarded) {
+      proximasRaw.push({
+        fecha: inicio,
+        paciente: nombrePaciente.get(x.patientId) ?? "Cliente sin ficha",
+        tratamiento: nombreTratamiento.get(x.treatmentId) ?? "Tratamiento",
+      });
+    }
+    // Tratamientos más agendados dentro del periodo.
+    if (inicio >= desde && x.treatmentId) {
+      const n = nombreTratamiento.get(x.treatmentId);
+      if (n) conteoTratamiento.set(n, (conteoTratamiento.get(n) ?? 0) + 1);
+    }
   });
 
-  let cisnesEarned = 0, cisnesRedeemed = 0;
+  const proximas = proximasRaw
+    .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+    .slice(0, 3)
+    .map((p) => ({
+      hora: p.fecha
+        .toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })
+        .replace(/\s*a\.?\s*m\.?/i, " am")
+        .replace(/\s*p\.?\s*m\.?/i, " pm"),
+      paciente: p.paciente,
+      tratamiento: p.tratamiento,
+    }));
+
+  const topTratamientos = [...conteoTratamiento.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // ── Clientes ─────────────────────────────────────────────────────────────
+  let nuevosClientes = 0;
+  patSnap.docs.forEach((d) => {
+    const alta = dateOf(d.data().createdAt);
+    if (alta.getTime() > 0 && alta >= desde) nuevosClientes++;
+  });
+
+  // ── Lealtad ──────────────────────────────────────────────────────────────
+  let cisnesEarned = 0;
+  let cisnesRedeemed = 0;
   rewSnap.docs.forEach((d) => {
     const x = d.data();
     const pts = typeof x.points === "number" ? x.points : 0;
-    if (x.type === "earned") cisnesEarned += pts; else if (x.type === "redeemed") cisnesRedeemed += pts;
+    if (x.type === "earned") cisnesEarned += pts;
+    else if (x.type === "redeemed") cisnesRedeemed += pts;
   });
 
-  // Desempeño: recompensas más canjeadas (desde redemptions).
   const rewardCount = new Map<string, number>();
   redSnap.docs.forEach((d) => {
     const t = (d.data().title as string) ?? "Recompensa";
@@ -405,22 +567,30 @@ export async function getAdminKpis(): Promise<AdminKpis> {
     .slice(0, 5);
 
   return {
-    totalSales, salesToday, salesWeek, salesByDay,
-    visits, requested, cisnesEarned, cisnesRedeemed,
-    topRewards, totalPatients: patSnap.size,
+    periodo,
+    periodoLabel: PERIODO_LABEL[periodo],
+    ingresos,
+    ingresosPrevio,
+    cobros,
+    ticketPromedio: cobros > 0 ? Math.round(ingresos / cobros) : 0,
+    serie,
+    serieTitulo,
+    serieVentana,
+    porMetodo,
+    hoyTotal,
+    hoyPorConfirmar,
+    hoyAtendidas,
+    proximas,
+    porConfirmar,
+    topTratamientos,
+    totalPatients: patSnap.size,
+    nuevosClientes,
+    cisnesEarned,
+    cisnesRedeemed,
+    topRewards,
   };
 }
 
-// Firestore puede devolver Timestamp o string; normalizamos a ISO string.
-function normalizeDate(v: unknown): string {
-  if (typeof v === "string") return v;
-  if (v && typeof v === "object" && "toDate" in v) {
-    return (v as { toDate: () => Date }).toDate().toISOString();
-  }
-  return new Date().toISOString();
-}
-
-// ── Tratamientos (catálogo) ─────────────────────────────────────────────────
 export async function listTreatmentsAdmin(): Promise<Treatment[]> {
   const snap = await getDocs(collection(db, "treatments"));
   return snap.docs
