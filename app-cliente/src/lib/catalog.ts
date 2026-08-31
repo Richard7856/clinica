@@ -74,3 +74,17 @@ export function nombrePorId<T extends { id: string; name: string }>(
 ): Record<string, string> {
   return Object.fromEntries(rows.map((r) => [r.id, r.name]));
 }
+
+// Traduce el fallo de una lectura a algo accionable. Un catálogo vacío y un
+// catálogo denegado se ven igual en pantalla, y no son lo mismo: el primero
+// se arregla creando datos, el segundo desplegando reglas.
+export function motivoFallo(razon: unknown): string {
+  const code =
+    razon && typeof razon === "object" && "code" in razon
+      ? String((razon as { code: unknown }).code)
+      : "";
+  if (code.includes("permission-denied"))
+    return "Sin permiso para leer esto (revisa las reglas de Firestore).";
+  if (code.includes("unavailable")) return "Sin conexión con el servidor.";
+  return "No se pudo cargar.";
+}

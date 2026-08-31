@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
-import { listTreatments, listClinics, loadHorarios } from "@/lib/catalog";
+import { listTreatments, listClinics, loadHorarios, motivoFallo } from "@/lib/catalog";
 import { useAuth } from "@/lib/auth";
 import { requestAppointment, listMyAppointments } from "@/lib/appointments";
 import { sendAppointmentQrEmail } from "@/lib/notify";
@@ -46,6 +46,7 @@ export function CitaScreen() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fallo, setFallo] = useState<string | undefined>();
 
   // Selección del form.
   const [treatmentId, setTreatmentId] = useState<string | null>(null);
@@ -60,28 +61,28 @@ export function CitaScreen() {
   useEffect(() => {
     let active = true;
     (async () => {
-      try {
-        const [treatRows, clinicRows, hs, myAppts] = await Promise.all([
-          listTreatments(),
-          listClinics(),
-          loadHorarios(),
-          patient ? listMyAppointments(patient.id) : Promise.resolve([]),
-        ]);
-        if (!active) return;
+      // Independientes: que no poder leer las citas propias impida además
+      // ver el catálogo y pedir una nueva.
+      const [treatRes, clinicRes, hsRes, apptRes] = await Promise.allSettled([
+        listTreatments(),
+        listClinics(),
+        loadHorarios(),
+        patient ? listMyAppointments(patient.id) : Promise.resolve([]),
+      ]);
+      if (!active) return;
 
-        setHorarios(hs);
-        setTreatments(treatRows);
-        setClinics(clinicRows);
-        setAppointments(myAppts);
-      } catch {
-        if (active) {
-          setTreatments([]);
-          setClinics([]);
-          setAppointments([]);
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
+      setTreatments(treatRes.status === "fulfilled" ? treatRes.value : []);
+      setClinics(clinicRes.status === "fulfilled" ? clinicRes.value : []);
+      if (hsRes.status === "fulfilled") setHorarios(hsRes.value);
+      setAppointments(apptRes.status === "fulfilled" ? apptRes.value : []);
+      setFallo(
+        treatRes.status === "rejected"
+          ? motivoFallo(treatRes.reason)
+          : clinicRes.status === "rejected"
+            ? motivoFallo(clinicRes.reason)
+            : undefined,
+      );
+      setLoading(false);
     })();
     return () => {
       active = false;
@@ -210,7 +211,7 @@ export function CitaScreen() {
                 setTreatmentId(null);
                 setSlot(null);
               }}
-              empty="Sin sucursales disponibles."
+              empty={fallo ?? "Sin sucursales disponibles."}
             />
 
             <Picker
@@ -234,7 +235,7 @@ export function CitaScreen() {
                   ? `Duración aproximada: ${selectedTreatment.durationMin ?? 30} min`
                   : undefined
               }
-              empty="No hay tratamientos en esta sucursal."
+              empty={fallo ?? "No hay tratamientos en esta sucursal."}
             />
 
             <Text style={styles.fieldLabel}>Fecha</Text>

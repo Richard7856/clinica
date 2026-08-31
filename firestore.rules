@@ -24,8 +24,11 @@ service cloud.firestore {
     function isTherapist() {
       return isSignedIn() && role() == 'therapist';
     }
+    function isCollaborator() {
+      return isSignedIn() && role() == 'collaborator';
+    }
     function isStaff() {
-      return isAdmin() || isReception() || isTherapist();
+      return isAdmin() || isReception() || isTherapist() || isCollaborator();
     }
 
     // ── Helpers de cliente (app móvil) ──────────────────────────────────────
@@ -57,7 +60,7 @@ service cloud.firestore {
     }
 
     // ── Catálogos internos (solo staff) ─────────────────────────────────────
-    match /treatments/{id}  { allow read: if isStaff(); allow write: if isAdmin(); }
+    match /treatments/{id}  { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /cabins/{id}      { allow read: if isStaff(); allow write: if isAdmin(); }
     // Aparatos: staff los administra (cambiar estado desde la app admin).
     match /devices/{id}     { allow read: if isStaff(); allow write: if isStaff(); }
@@ -75,14 +78,25 @@ service cloud.firestore {
     }
 
     match /appointments/{id} {
-      allow read: if isStaff();
-      allow create, update, delete: if isAdmin() || isReception();
+      allow read: if isStaff() || ownsPatient(resource.data.patientId);
+      allow create: if isAdmin() || isReception()
+                    || ownsPatient(request.resource.data.patientId);
+      // Marcar la visita y asignar Cisnes es del staff, no del cliente.
+      allow update: if isStaff();
+      allow delete: if isAdmin() || isReception();
     }
 
     match /checkins/{id} {
       allow read: if isStaff();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
+    }
+
+    // Sucursales: las lee cualquier autenticado (el cliente elige sede al
+    // agendar y las ve en Ubicación); solo el admin las administra.
+    match /clinics/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // ── Catálogos públicos de la app cliente ────────────────────────────────
@@ -96,6 +110,10 @@ service cloud.firestore {
       allow write: if isStaff();
     }
     match /products/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+    match /storeProducts/{id} {
       allow read: if isSignedIn();
       allow write: if isStaff();
     }

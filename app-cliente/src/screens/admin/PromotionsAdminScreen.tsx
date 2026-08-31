@@ -8,7 +8,7 @@ import {
   deletePromotion,
   type PromotionInput,
 } from "@/lib/admin";
-import { listTreatments, listClinics, nombrePorId } from "@/lib/catalog";
+import { listTreatments, listClinics, nombrePorId, motivoFallo } from "@/lib/catalog";
 import { ScreenHeader, Card, EmptyState, Loader } from "@/components/ui/Screen";
 import { RowActions } from "@/components/ui/Controls";
 import { FormModal } from "@/components/ui/FormModal";
@@ -94,6 +94,7 @@ export function PromotionsAdminScreen() {
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fallos, setFallos] = useState<{ treatments?: string; clinics?: string }>({});
   const [editing, setEditing] = useState<Promotion | "nueva" | null>(null);
   const [form, setForm] = useState(VACIO);
   const [errors, setErrors] = useState<Errors<Campo>>({});
@@ -101,22 +102,28 @@ export function PromotionsAdminScreen() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  // Cada lectura corre por su cuenta: si una colección está denegada, las
+  // otras se siguen mostrando y el formulario dice cuál falló en vez de
+  // fingir que el catálogo está vacío.
   const load = useCallback(async () => {
-    try {
-      const [proms, treats, cls] = await Promise.all([
-        listPromotions(),
-        listTreatments(),
-        listClinics(),
-      ]);
-      setItems(proms);
-      setTreatments(treats);
-      setClinics(cls);
-    } catch {
+    const [proms, treats, cls] = await Promise.allSettled([
+      listPromotions(),
+      listTreatments(),
+      listClinics(),
+    ]);
+
+    if (proms.status === "fulfilled") setItems(proms.value);
+    else {
       setItems([]);
-      toast.error("No se pudieron cargar las promociones.");
-    } finally {
-      setLoading(false);
+      toast.error(`Promociones: ${motivoFallo(proms.reason)}`);
     }
+    setTreatments(treats.status === "fulfilled" ? treats.value : []);
+    setClinics(cls.status === "fulfilled" ? cls.value : []);
+    setFallos({
+      treatments: treats.status === "rejected" ? motivoFallo(treats.reason) : undefined,
+      clinics: cls.status === "rejected" ? motivoFallo(cls.reason) : undefined,
+    });
+    setLoading(false);
   }, [toast]);
 
   useEffect(() => {
@@ -496,8 +503,8 @@ export function PromotionsAdminScreen() {
             options={treatments.map((t) => ({ value: t.id, label: t.name }))}
             values={form.treatmentIds}
             onChange={(v) => set("treatmentIds", v)}
-            error={errors.alcance}
-            empty="Primero crea tratamientos en el catálogo."
+            error={errors.alcance ?? fallos.treatments}
+            empty={fallos.treatments ?? "Primero crea tratamientos en el catálogo."}
           />
         )}
         {form.scope === "category" && (
@@ -518,6 +525,8 @@ export function PromotionsAdminScreen() {
           options={clinics.map((c) => ({ value: c.id, label: c.name }))}
           values={form.clinicIds}
           onChange={(v) => set("clinicIds", v)}
+          error={fallos.clinics}
+          empty={fallos.clinics ?? "Aún no hay sucursales registradas."}
           helper="Déjalo vacío para que aplique en todas."
         />
 
