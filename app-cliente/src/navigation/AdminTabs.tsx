@@ -6,6 +6,7 @@ import { KpiDashboardScreen } from "@/screens/admin/KpiDashboardScreen";
 import { PromotionsAdminScreen } from "@/screens/admin/PromotionsAdminScreen";
 import { DevicesAdminScreen } from "@/screens/admin/DevicesAdminScreen";
 import { AppointmentsAdminScreen } from "@/screens/admin/AppointmentsAdminScreen";
+import { AppointmentDetailScreen } from "@/screens/admin/AppointmentDetailScreen";
 import { RewardsAdminScreen } from "@/screens/admin/RewardsAdminScreen";
 import { StoreAdminScreen } from "@/screens/admin/StoreAdminScreen";
 import { ClinicsAdminScreen } from "@/screens/admin/ClinicsAdminScreen";
@@ -28,8 +29,26 @@ export type AjustesStackParams = {
   ConfigPuntos: undefined;
 };
 
+// La agenda abre el detalle de cada cita sin salir del tab.
+export type CitasStackParams = {
+  Agenda: undefined;
+  Detalle: { id: string };
+};
+
 const Tab = createBottomTabNavigator();
 const AjustesStack = createNativeStackNavigator<AjustesStackParams>();
+const CitasStack = createNativeStackNavigator<CitasStackParams>();
+
+function CitasNavigator() {
+  return (
+    <CitasStack.Navigator
+      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }}
+    >
+      <CitasStack.Screen name="Agenda" component={AppointmentsAdminScreen} />
+      <CitasStack.Screen name="Detalle" component={AppointmentDetailScreen} />
+    </CitasStack.Navigator>
+  );
+}
 
 function AjustesNavigator() {
   return (
@@ -84,7 +103,7 @@ export function AdminTabs() {
         <Tab.Screen name="Inicio" component={KpiDashboardScreen} />
         <Tab.Screen name="Promociones" component={PromotionsAdminScreen} />
         <Tab.Screen name="Tienda" component={StoreAdminScreen} />
-        <Tab.Screen name="Citas" component={AppointmentsAdminScreen} />
+        <Tab.Screen name="Citas" component={CitasNavigator} />
         <Tab.Screen name="Ajustes" component={AjustesNavigator} />
       </Tab.Navigator>
     </View>

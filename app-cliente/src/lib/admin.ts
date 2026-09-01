@@ -6,10 +6,11 @@ import {
   deleteDoc,
   doc,
   query,
+  where,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { doc as fbDoc, getDoc, setDoc } from "firebase/firestore";
+import { doc as fbDoc, getDoc as fbGetDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
   Treatment,
@@ -21,6 +22,8 @@ import type {
   StoreProduct,
   ClinicInfo,
   Patient,
+  Payment,
+  PaymentMethod,
 } from "./types";
 import { mapPromotion } from "./types";
 
@@ -228,7 +231,7 @@ export async function deleteStoreProduct(id: string): Promise<void> {
 
 // ── Config de puntos (settings/clinic) ──────────────────────────────────────
 export async function getClinicSettings(): Promise<ClinicInfo | null> {
-  const snap = await getDoc(fbDoc(db, "settings", "clinic"));
+  const snap = await fbGetDoc(fbDoc(db, "settings", "clinic"));
   if (!snap.exists()) return null;
   return snap.data() as ClinicInfo;
 }
@@ -261,7 +264,95 @@ export async function listAppointments(): Promise<Appointment[]> {
       endAt: normalizeDate(data.endAt),
       status: (data.status as string) ?? "scheduled",
       pointsAwarded: Boolean(data.pointsAwarded),
+      amountSpent: typeof data.amountSpent === "number" ? data.amountSpent : undefined,
+      notes: (data.notes as string) ?? undefined,
     };
+  });
+}
+
+// ── Detalle de una cita ─────────────────────────────────────────────────────
+export async function getAppointment(id: string): Promise<Appointment | null> {
+  const snap = await fbGetDoc(fbDoc(db, "appointments", id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    id: snap.id,
+    patientId: (d.patientId as string) ?? "",
+    treatmentId: (d.treatmentId as string) ?? "",
+    cabinId: (d.cabinId as string) ?? "",
+    clinicId: (d.clinicId as string) ?? undefined,
+    startAt: normalizeDate(d.startAt),
+    endAt: normalizeDate(d.endAt),
+    status: (d.status as string) ?? "scheduled",
+    pointsAwarded: Boolean(d.pointsAwarded),
+    amountSpent: typeof d.amountSpent === "number" ? d.amountSpent : undefined,
+    notes: (d.notes as string) ?? undefined,
+  };
+}
+
+export async function getPatient(id: string): Promise<Patient | null> {
+  const snap = await fbGetDoc(fbDoc(db, "patients", id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    id: snap.id,
+    fullName: (d.fullName as string) ?? "",
+    email: (d.email as string) ?? "",
+    phone: (d.phone as string) ?? undefined,
+    qrSlug: (d.qrSlug as string) ?? snap.id,
+    points: typeof d.points === "number" ? d.points : 0,
+    banned: Boolean(d.banned),
+    storeEnabled: Boolean(d.storeEnabled),
+  };
+}
+
+// Lo que se hizo en la visita.
+export async function saveAppointmentNotes(id: string, notes: string): Promise<void> {
+  await updateDoc(doc(db, "appointments", id), { notes, updatedAt: serverTimestamp() });
+}
+
+// ── Cobros ──────────────────────────────────────────────────────────────────
+// Solo where sobre un campo: no necesita índice compuesto.
+export async function listPaymentsFor(refId: string): Promise<Payment[]> {
+  const snap = await getDocs(query(collection(db, "payments"), where("refId", "==", refId)));
+  return snap.docs
+    .map((d) => {
+      const x = d.data();
+      return {
+        id: d.id,
+        patientId: (x.patientId as string) ?? "",
+        amount: typeof x.amount === "number" ? x.amount : 0,
+        method: (x.method as PaymentMethod) ?? "other",
+        concept: (x.concept as string) ?? "session",
+        refId: x.refId as string | undefined,
+        date: normalizeDate(x.date),
+        notes: x.notes as string | undefined,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// El documento sigue el esquema de la web para que los reportes de allá y el
+// panel lean lo mismo.
+export async function createPayment(input: {
+  patientId: string;
+  amount: number;
+  method: PaymentMethod;
+  refId: string;
+  receivedBy: string;
+  notes?: string;
+}): Promise<void> {
+  await addDoc(collection(db, "payments"), {
+    patientId: input.patientId,
+    amount: input.amount,
+    method: input.method,
+    concept: "session",
+    refId: input.refId,
+    date: new Date().toISOString(),
+    receivedBy: input.receivedBy,
+    notes: input.notes ?? "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 }
 
@@ -443,8 +534,12 @@ export async function getAdminKpis(periodo: KpiPeriodo = "mes"): Promise<AdminKp
   // Un cobro puede venir de `payments` (capturado en recepción) o del monto
   // que el colaborador escribe al escanear el QR de una visita.
   const ventas: { date: Date; amount: number; metodo: string }[] = [];
+  // Citas que ya tienen un cobro capturado en recepción: su `amountSpent` no
+  // se vuelve a sumar, o el mismo dinero contaría dos veces.
+  const conCobro = new Set<string>();
   paySnap.docs.forEach((d) => {
     const x = d.data();
+    if (typeof x.refId === "string" && x.refId) conCobro.add(x.refId);
     if (typeof x.amount === "number")
       ventas.push({
         date: dateOf(x.date),
@@ -454,11 +549,11 @@ export async function getAdminKpis(periodo: KpiPeriodo = "mes"): Promise<AdminKp
   });
   aptSnap.docs.forEach((d) => {
     const x = d.data();
-    if (x.pointsAwarded && typeof x.amountSpent === "number")
+    if (x.pointsAwarded && typeof x.amountSpent === "number" && !conCobro.has(d.id))
       ventas.push({
         date: dateOf(x.updatedAt ?? x.startAt),
         amount: x.amountSpent,
-        metodo: "En visita",
+        metodo: "Sin método registrado",
       });
   });
 

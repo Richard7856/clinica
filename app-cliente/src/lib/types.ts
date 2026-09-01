@@ -317,4 +317,26 @@ export interface Appointment {
   status: string;
   pointsAwarded?: boolean; // true una vez que el colaborador escaneó y asignó
   amountSpent?: number;
+  notes?: string; // qué se hizo en la visita
+}
+
+// Pago registrado en recepción. Refleja el esquema de la web (lib/schemas/payment).
+export type PaymentMethod = "cash" | "transfer" | "card" | "other";
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  cash: "Efectivo",
+  transfer: "Transferencia",
+  card: "Tarjeta",
+  other: "Otro",
+};
+
+export interface Payment {
+  id: string;
+  patientId: string;
+  amount: number;
+  method: PaymentMethod;
+  concept: string;
+  refId?: string;
+  date: string;
+  notes?: string;
 }

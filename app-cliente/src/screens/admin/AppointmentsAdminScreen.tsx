@@ -8,6 +8,10 @@ import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { etiquetaDia, etiquetaHora, esMismoDia } from "@/lib/schedule";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { Appointment } from "@/lib/types";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { CitasStackParams } from "@/navigation/AdminTabs";
+
+type Props = NativeStackScreenProps<CitasStackParams, "Agenda">;
 
 // La agenda de la clínica. Antes era una lista plana en orden inverso donde
 // una cita de hace un mes se veía igual que la de esta tarde. Ahora se agrupa
@@ -55,7 +59,7 @@ const VACIOS: Record<Filtro, { title: string; message: string }> = {
   historial: { title: "Sin citas pasadas", message: "Aquí quedará el registro de lo atendido." },
 };
 
-export function AppointmentsAdminScreen() {
+export function AppointmentsAdminScreen({ navigation }: Props) {
   const [items, setItems] = useState<Appointment[]>([]);
   const [pacientes, setPacientes] = useState<Record<string, string>>({});
   const [tratamientos, setTratamientos] = useState<Record<string, string>>({});
@@ -169,7 +173,11 @@ export function AppointmentsAdminScreen() {
 
     return (
       <Card style={styles.card}>
-        <View style={styles.fila}>
+        <Pressable
+          onPress={() => navigation.navigate("Detalle", { id: item.id })}
+          style={({ pressed }) => [styles.fila, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+        >
           <Text style={styles.hora}>{etiquetaHora(fecha)}</Text>
           <View style={styles.centro}>
             <Text style={styles.paciente} numberOfLines={1}>
@@ -182,7 +190,8 @@ export function AppointmentsAdminScreen() {
             ) : null}
           </View>
           <Pill label={label} color={color} />
-        </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
 
         {abierta ? (
           <View style={styles.acciones}>
@@ -308,6 +317,7 @@ const styles = StyleSheet.create({
     width: 66,
   },
   centro: { flex: 1 },
+  chevron: { fontSize: 22, color: colors.muted, marginLeft: 2, fontFamily: fonts.regular },
   paciente: { fontSize: font.size.md, color: colors.textOnCard, fontFamily: fonts.medium },
   detalle: { fontSize: font.size.xs, color: colors.muted, fontFamily: fonts.regular, marginTop: 1 },
   acciones: {
