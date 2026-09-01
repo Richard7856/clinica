@@ -24,6 +24,9 @@ export function Picker({
   options,
   value,
   onChange,
+  multiple = false,
+  values,
+  onChangeValues,
   placeholder = "Selecciona una opción",
   error,
   helper,
@@ -37,6 +40,10 @@ export function Picker({
   options: PickerOption[];
   value: string | null;
   onChange: (v: string) => void;
+  // Modo múltiple: `values` manda sobre `value` y la hoja queda abierta.
+  multiple?: boolean;
+  values?: string[];
+  onChangeValues?: (v: string[]) => void;
   placeholder?: string;
   error?: string;
   helper?: string;
@@ -49,7 +56,24 @@ export function Picker({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
+  const seleccion = values ?? [];
   const selected = options.find((o) => o.value === value) ?? null;
+
+  // Qué dice el disparador: el nombre si es uno solo, un resumen si son varios.
+  const resumen = useMemo(() => {
+    if (!multiple) return selected?.label ?? null;
+    if (seleccion.length === 0) return null;
+    if (seleccion.length === 1) {
+      return options.find((o) => o.value === seleccion[0])?.label ?? "1 seleccionado";
+    }
+    return `${seleccion.length} seleccionados`;
+  }, [multiple, selected, seleccion, options]);
+
+  function toggle(v: string) {
+    onChangeValues?.(
+      seleccion.includes(v) ? seleccion.filter((x) => x !== v) : [...seleccion, v],
+    );
+  }
 
   // Filtra por texto y agrupa conservando el orden de aparición del grupo.
   const sections = useMemo(() => {
@@ -94,10 +118,12 @@ export function Picker({
         accessibilityRole="button"
       >
         <View style={{ flex: 1 }}>
-          <Text style={[styles.triggerText, !selected && styles.placeholder]} numberOfLines={1}>
-            {selected ? selected.label : placeholder}
+          <Text style={[styles.triggerText, !resumen && styles.placeholder]} numberOfLines={1}>
+            {resumen ?? placeholder}
           </Text>
-          {selected?.hint ? <Text style={styles.triggerHint}>{selected.hint}</Text> : null}
+          {!multiple && selected?.hint ? (
+            <Text style={styles.triggerHint}>{selected.hint}</Text>
+          ) : null}
         </View>
         <Text style={styles.caret}>▾</Text>
       </Pressable>
@@ -138,8 +164,16 @@ export function Picker({
                   <Text style={styles.group}>{row.group}</Text>
                 ) : (
                   <Pressable
-                    style={[styles.row, row.item.value === value && styles.rowOn]}
+                    style={[
+                      styles.row,
+                      (multiple ? seleccion.includes(row.item.value) : row.item.value === value) &&
+                        styles.rowOn,
+                    ]}
                     onPress={() => {
+                      if (multiple) {
+                        toggle(row.item.value);
+                        return; // la hoja sigue abierta para seguir eligiendo
+                      }
                       onChange(row.item.value);
                       close();
                     }}
@@ -148,12 +182,22 @@ export function Picker({
                       <Text style={styles.rowText}>{row.item.label}</Text>
                       {row.item.hint ? <Text style={styles.rowHint}>{row.item.hint}</Text> : null}
                     </View>
-                    {row.item.value === value ? <Text style={styles.check}>✓</Text> : null}
+                    {(multiple ? seleccion.includes(row.item.value) : row.item.value === value) ? (
+                      <Text style={styles.check}>✓</Text>
+                    ) : null}
                   </Pressable>
                 )
               }
             />
           )}
+
+          {multiple ? (
+            <Pressable style={styles.listo} onPress={close} accessibilityRole="button">
+              <Text style={styles.listoText}>
+                {seleccion.length > 0 ? `Listo · ${seleccion.length}` : "Listo"}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </Modal>
     </View>
@@ -162,6 +206,14 @@ export function Picker({
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: spacing.md },
+  listo: {
+    backgroundColor: colors.gold,
+    borderRadius: radius.md,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: spacing.md,
+  },
+  listoText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   label: {
     fontSize: font.size.xs,
     letterSpacing: 1.2,

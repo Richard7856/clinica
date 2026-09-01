@@ -256,11 +256,19 @@ export async function listAppointments(): Promise<Appointment[]> {
       patientId: (data.patientId as string) ?? "",
       treatmentId: (data.treatmentId as string) ?? "",
       cabinId: (data.cabinId as string) ?? "",
+      clinicId: (data.clinicId as string) ?? undefined,
       startAt: normalizeDate(data.startAt),
       endAt: normalizeDate(data.endAt),
       status: (data.status as string) ?? "scheduled",
+      pointsAwarded: Boolean(data.pointsAwarded),
     };
   });
+}
+
+// Confirmar o cancelar desde la agenda. Sin esto, "por confirmar" era una
+// cifra que nadie podía bajar desde la app.
+export async function setAppointmentStatus(id: string, status: string): Promise<void> {
+  await updateDoc(doc(db, "appointments", id), { status, updatedAt: serverTimestamp() });
 }
 
 // ── Catálogo de recompensas (colección `rewardItems`) ───────────────────────

@@ -25,6 +25,7 @@ import {
   promoBeneficio,
   promoCondiciones,
   promoVigente,
+  treatmentPriceLabel,
   type Promotion,
   type PromotionType,
   type PromotionScope,
@@ -149,6 +150,22 @@ export function PromotionsAdminScreen() {
       scope: form.scope,
     }),
     [form],
+  );
+
+  // Agrupadas por categoría y con el precio, igual que al agendar.
+  const opcionesTratamientos = useMemo(
+    () =>
+      ["facial", "corporal"].flatMap((cat) =>
+        treatments
+          .filter((t) => t.category === cat)
+          .map((t) => ({
+            value: t.id,
+            label: t.name,
+            hint: treatmentPriceLabel(t),
+            group: cat === "facial" ? "Faciales" : "Corporales",
+          })),
+      ),
+    [treatments],
   );
 
   const nombres = useMemo(
@@ -497,14 +514,27 @@ export function PromotionsAdminScreen() {
           onChange={(v) => set("scope", (v as PromotionScope) ?? "all")}
         />
         {form.scope === "treatments" && (
-          <MultiSelect
+          <Picker
             label="Tratamientos"
             required
-            options={treatments.map((t) => ({ value: t.id, label: t.name }))}
+            multiple
+            title="¿En cuáles aplica?"
+            placeholder="Elige uno o varios"
+            options={opcionesTratamientos}
+            value={null}
+            onChange={() => {}}
             values={form.treatmentIds}
-            onChange={(v) => set("treatmentIds", v)}
+            onChangeValues={(v) => set("treatmentIds", v)}
             error={errors.alcance ?? fallos.treatments}
             empty={fallos.treatments ?? "Primero crea tratamientos en el catálogo."}
+            helper={
+              form.treatmentIds.length > 0
+                ? form.treatmentIds
+                    .map((id) => nombres.tratamientos[id])
+                    .filter(Boolean)
+                    .join(", ")
+                : undefined
+            }
           />
         )}
         {form.scope === "category" && (
