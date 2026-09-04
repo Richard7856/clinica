@@ -56,12 +56,35 @@ export interface StoreProduct {
   active: boolean;
 }
 
+// Qué recurso ocupa un tratamiento. De esto depende en qué horario se puede
+// agendar: la doctora y los aparatos no coinciden en la agenda de la clínica.
+export type RecursoTratamiento = "doctora" | "aparato";
+
+export const RECURSO_LABEL: Record<RecursoTratamiento, string> = {
+  doctora: "Requiere doctora",
+  aparato: "Aparatología",
+};
+
+// Horario de un día. `h` es "10:00 – 19:00" o "Cerrado".
+export interface Horario {
+  dia: string;
+  h: string;
+}
+
+// Cada sucursal lleva DOS agendas: la de sus aparatos y la de la doctora, que
+// viaja entre sedes. Un tratamiento solo se ofrece dentro de la que le toca.
+export interface HorariosClinica {
+  aparato: Horario[];
+  doctora: Horario[];
+}
+
 // Clínica (multi-clínica ligero). Los aparatos/citas se etiquetan con su id.
 export interface Clinic {
   id: string;
   name: string;
   address?: string;
   phone?: string;
+  horarios?: HorariosClinica;
   active: boolean;
 }
 
@@ -75,6 +98,7 @@ export interface Treatment {
   priceMax?: number; // si el precio es un rango
   priceNote?: string; // ej. "por unidad"
   durationMin?: number;
+  requires?: RecursoTratamiento; // por defecto "aparato"
   clinicIds: string[];
   cabins?: Record<string, string>; // clinicId → "Cabina 4"
   active: boolean;

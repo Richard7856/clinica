@@ -5,13 +5,20 @@ import { ScreenHeader, Card, EmptyState, Loader, useBack } from "@/components/ui
 import { RowActions } from "@/components/ui/Controls";
 import { FormModal } from "@/components/ui/FormModal";
 import { Field } from "@/components/form/Field";
+import { HorarioEditor, horarioCompleto } from "@/components/form/HorarioEditor";
 import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { texto, esValido, type Errors } from "@/lib/validate";
 import { colors, spacing, font, fonts } from "@/theme";
-import type { Clinic } from "@/lib/types";
+import type { Clinic, Horario } from "@/lib/types";
 
 type Campo = "name";
 const VACIO = { name: "", address: "", phone: "" };
+
+// Un día sin rango se guarda como "Cerrado"; no guardamos días vacíos para
+// que el horario del documento siempre tenga los siete.
+function limpiar(lista: Horario[]): Horario[] {
+  return lista.map((d) => ({ dia: d.dia, h: d.h.trim() || "Cerrado" }));
+}
 
 // Panel admin: sucursales. Los aparatos, tratamientos y citas se etiquetan con
 // el id de la clínica, por eso eliminar una no es inocuo.
@@ -21,6 +28,8 @@ export function ClinicsAdminScreen() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Clinic | "nueva" | null>(null);
   const [form, setForm] = useState(VACIO);
+  const [horAparato, setHorAparato] = useState<Horario[]>(horarioCompleto(undefined));
+  const [horDoctora, setHorDoctora] = useState<Horario[]>(horarioCompleto(undefined));
   const [errors, setErrors] = useState<Errors<Campo>>({});
   const [saving, setSaving] = useState(false);
   const toast = useToast();
@@ -49,6 +58,8 @@ export function ClinicsAdminScreen() {
         ? VACIO
         : { name: c.name, address: c.address ?? "", phone: c.phone ?? "" },
     );
+    setHorAparato(horarioCompleto(c === "nueva" ? undefined : c.horarios?.aparato));
+    setHorDoctora(horarioCompleto(c === "nueva" ? undefined : c.horarios?.doctora));
   }
 
   async function onSubmit() {
@@ -62,6 +73,7 @@ export function ClinicsAdminScreen() {
         name: form.name.trim(),
         address: form.address.trim(),
         phone: form.phone.trim(),
+        horarios: { aparato: limpiar(horAparato), doctora: limpiar(horDoctora) },
       };
       if (editing === "nueva") await createClinic(datos);
       else if (editing) await updateClinic(editing.id, datos);
@@ -92,12 +104,28 @@ export function ClinicsAdminScreen() {
     }
   }
 
+  // "Lun, Mar, Jue" — los días con atención, para leer de un vistazo.
+  function resumen(lista: Horario[] | undefined): string {
+    const abiertos = (lista ?? [])
+      .filter((d) => d.h && !/cerrado/i.test(d.h))
+      .map((d) => d.dia.slice(0, 3));
+    return abiertos.length ? abiertos.join(", ") : "sin días";
+  }
+
   function renderItem({ item }: { item: Clinic }) {
     return (
       <Card>
         <Text style={styles.title}>{item.name}</Text>
         {item.address ? <Text style={styles.meta}>{item.address}</Text> : null}
         {item.phone ? <Text style={styles.meta}>{item.phone}</Text> : null}
+        {item.horarios ? (
+          <Text style={styles.horario}>
+            Aparatos: {resumen(item.horarios.aparato)} · Doctora:{" "}
+            {resumen(item.horarios.doctora)}
+          </Text>
+        ) : (
+          <Text style={styles.horario}>Sin horarios propios (usa el general).</Text>
+        )}
         <RowActions onEdit={() => abrir(item)} onDelete={() => onDelete(item)} />
       </Card>
     );
@@ -159,6 +187,19 @@ export function ClinicsAdminScreen() {
           placeholder="Ej. 434 342 1180"
           keyboardType="phone-pad"
         />
+
+        <HorarioEditor
+          label="Horario de aparatos"
+          helper="Cuándo se pueden agendar los tratamientos de aparatología. Deja el día vacío si no se atiende."
+          value={horAparato}
+          onChange={setHorAparato}
+        />
+        <HorarioEditor
+          label="Horario de la doctora"
+          helper="Solo las horas en que la doctora está en ESTA sucursal. Si ese día está en otra sede, déjalo vacío."
+          value={horDoctora}
+          onChange={setHorDoctora}
+        />
       </FormModal>
     </View>
   );
@@ -169,4 +210,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   title: { fontSize: font.size.lg, color: colors.textOnCard, fontFamily: fonts.medium },
   meta: { fontSize: font.size.sm, color: colors.muted, marginTop: 4, fontFamily: fonts.regular },
+  horario: {
+    fontSize: font.size.xs,
+    color: colors.subtleOnCard,
+    marginTop: 6,
+    lineHeight: 16,
+    fontFamily: fonts.regular,
+  },
 });

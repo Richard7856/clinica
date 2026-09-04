@@ -152,12 +152,13 @@ export async function listClinics(): Promise<Clinic[]> {
 }
 
 export async function createClinic(
-  input: Pick<Clinic, "name" | "address" | "phone">,
+  input: Pick<Clinic, "name" | "address" | "phone" | "horarios">,
 ): Promise<void> {
   await addDoc(collection(db, "clinics"), {
     name: input.name,
     address: input.address ?? "",
     phone: input.phone ?? "",
+    horarios: input.horarios ?? null,
     active: true,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -166,12 +167,13 @@ export async function createClinic(
 
 export async function updateClinic(
   id: string,
-  input: Pick<Clinic, "name" | "address" | "phone">,
+  input: Pick<Clinic, "name" | "address" | "phone" | "horarios">,
 ): Promise<void> {
   await updateDoc(doc(db, "clinics", id), {
     name: input.name,
     address: input.address ?? "",
     phone: input.phone ?? "",
+    horarios: input.horarios ?? null,
     updatedAt: serverTimestamp(),
   });
 }
@@ -744,6 +746,7 @@ export interface TreatmentInput {
   priceMax?: number;
   priceNote?: string;
   durationMin: number;
+  requires: Treatment["requires"];
   clinicIds: string[];
 }
 

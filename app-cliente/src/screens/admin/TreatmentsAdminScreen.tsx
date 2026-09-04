@@ -39,6 +39,7 @@ const VACIO = {
   priceMax: "",
   priceNote: "",
   durationMin: "30",
+  requires: "aparato" as Treatment["requires"],
   clinicIds: [] as string[],
 };
 
@@ -107,6 +108,7 @@ export function TreatmentsAdminScreen() {
       priceMax: t.priceMax ? String(t.priceMax) : "",
       priceNote: t.priceNote ?? "",
       durationMin: String(t.durationMin ?? 30),
+      requires: t.requires ?? "aparato",
       clinicIds: [...t.clinicIds],
     });
     setErrors({});
@@ -134,6 +136,7 @@ export function TreatmentsAdminScreen() {
       category: form.category,
       price: Number(form.price),
       durationMin: Number(form.durationMin),
+      requires: form.requires,
       clinicIds: form.clinicIds,
       ...(form.priceMax.trim() ? { priceMax: Number(form.priceMax) } : {}),
       ...(form.priceNote.trim() ? { priceNote: form.priceNote.trim() } : {}),
@@ -350,6 +353,18 @@ export function TreatmentsAdminScreen() {
           suffix="min"
           error={errors.durationMin}
           helper="Define los horarios disponibles al agendar."
+        />
+
+        <Select
+          label="Lo realiza"
+          required
+          options={[
+            { value: "aparato", label: "Aparatología" },
+            { value: "doctora", label: "La doctora" },
+          ]}
+          value={form.requires ?? "aparato"}
+          onChange={(v) => set("requires", (v as Treatment["requires"]) ?? "aparato")}
+          helper="La doctora y los aparatos tienen horarios distintos en cada sucursal."
         />
 
         <MultiSelect

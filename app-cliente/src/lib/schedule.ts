@@ -2,10 +2,9 @@
 // Los horarios viven en settings/clinic.horarios: [{ dia, h }] donde `h` es
 // "10:00 – 19:00" o "Cerrado".
 
-export interface Horario {
-  dia: string;
-  h: string;
-}
+import type { Horario, HorariosClinica, RecursoTratamiento } from "./types";
+
+export type { Horario };
 
 export const HORARIOS_DEFAULT: Horario[] = [
   { dia: "Lunes", h: "10:00 – 19:00" },
@@ -127,4 +126,19 @@ export function etiquetaHora(date: Date): string {
     .toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true })
     .replace(/\s*a\.?\s*m\.?/i, " am")
     .replace(/\s*p\.?\s*m\.?/i, " pm");
+}
+
+
+// Horario que aplica a un tratamiento en una sucursal: el de la doctora si el
+// tratamiento la necesita, el de los aparatos si no. Sin horarios propios, la
+// sucursal cae en el general de la clínica.
+export function horariosDe(
+  clinica: { horarios?: HorariosClinica } | null | undefined,
+  recurso: RecursoTratamiento | undefined,
+  general: Horario[],
+): Horario[] {
+  const h = clinica?.horarios;
+  if (!h) return general;
+  const lista = recurso === "doctora" ? h.doctora : h.aparato;
+  return Array.isArray(lista) && lista.length > 0 ? lista : general;
 }

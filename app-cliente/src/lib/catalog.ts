@@ -4,9 +4,9 @@
 
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Treatment, Clinic, Promotion } from "./types";
+import type { Treatment, Clinic, Promotion, HorariosClinica, Horario } from "./types";
 import { mapPromotion, promoVigente } from "./types";
-import { HORARIOS_DEFAULT, type Horario } from "./schedule";
+import { HORARIOS_DEFAULT } from "./schedule";
 
 export async function listTreatments(): Promise<Treatment[]> {
   const snap = await getDocs(collection(db, "treatments"));
@@ -21,6 +21,7 @@ export async function listTreatments(): Promise<Treatment[]> {
         priceMax: typeof d.priceMax === "number" ? d.priceMax : undefined,
         priceNote: d.priceNote as string | undefined,
         durationMin: d.durationMin as number | undefined,
+        requires: (d.requires as Treatment["requires"]) ?? "aparato",
         clinicIds: Array.isArray(d.clinicIds) ? (d.clinicIds as string[]) : [],
         cabins: (d.cabins as Record<string, string>) ?? undefined,
         active: d.active !== false,
@@ -38,9 +39,23 @@ export async function listClinics(): Promise<Clinic[]> {
       name: (d.name as string) ?? "",
       address: d.address as string | undefined,
       phone: d.phone as string | undefined,
+      horarios: leerHorarios(d.horarios),
       active: Boolean(d.active),
     };
   });
+}
+
+// Los horarios por sucursal traen dos listas; si el documento no las tiene
+// (sucursal vieja), se devuelve undefined y se usa el horario general.
+function leerHorarios(v: unknown): HorariosClinica | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as { aparato?: unknown; doctora?: unknown };
+  const lista = (x: unknown): Horario[] =>
+    Array.isArray(x) ? (x as Horario[]).filter((h) => h && typeof h.dia === "string") : [];
+  const aparato = lista(o.aparato);
+  const doctora = lista(o.doctora);
+  if (aparato.length === 0 && doctora.length === 0) return undefined;
+  return { aparato, doctora };
 }
 
 // Solo `where` (sin orderBy) para no exigir un índice compuesto; el orden se

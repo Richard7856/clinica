@@ -25,8 +25,18 @@ import {
   slotsDelDia,
   esCerrado,
   fechaConSlot,
+  horariosDe,
   type Horario,
 } from "@/lib/schedule";
+import { RECURSO_LABEL } from "@/lib/types";
+
+// "90" → "1 h 30 min". Los tratamientos van de 15 minutos a 3 horas.
+function duracionTexto(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
 
 // Traduce el estado del backend a etiqueta + color de badge.
 function statusBadge(status: string): { label: string; bg: string; fg: string } {
@@ -93,28 +103,54 @@ export function CitaScreen() {
   const dias = useMemo(() => proximosDias(14), []);
   const selectedDate = dias[dayIdx] ?? dias[0];
 
-  // Abrir en un día cerrado hacía que lo primero que leyera la clienta fuera
-  // "Cerrado ese día". Al cargar los horarios saltamos al primer día abierto.
-  useEffect(() => {
-    if (!esCerrado(dias[dayIdx] ?? dias[0], horarios)) return;
-    const abierto = dias.findIndex((d) => !esCerrado(d, horarios));
-    if (abierto >= 0) setDayIdx(abierto);
-    // Solo corrige el arranque; si la clienta elige a propósito un día
-    // cerrado, se respeta (dayIdx no está en las dependencias).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [horarios, dias]);
-
   const selectedTreatment = useMemo(
     () => treatments.find((t) => t.id === treatmentId) ?? null,
     [treatments, treatmentId],
   );
 
-  // Espacios de 30 min según el horario real de la clínica ese día.
-  const slots = useMemo(
-    () => slotsDelDia(selectedDate, horarios, selectedTreatment?.durationMin ?? 30, 30),
-    [selectedDate, horarios, selectedTreatment],
+  const selectedClinic = useMemo(
+    () => clinics.find((c) => c.id === clinicId) ?? null,
+    [clinics, clinicId],
   );
-  const cerrado = esCerrado(selectedDate, horarios);
+
+  // El horario depende del recurso: la doctora viaja entre sedes y los
+  // aparatos se quedan, así que cada tratamiento tiene su propia ventana.
+  const horariosAplican = useMemo(
+    () => horariosDe(selectedClinic, selectedTreatment?.requires, horarios),
+    [selectedClinic, selectedTreatment, horarios],
+  );
+
+  // Espacios de 30 min que caben completos dentro de la ventana del recurso.
+  const slots = useMemo(
+    () => slotsDelDia(selectedDate, horariosAplican, selectedTreatment?.durationMin ?? 30, 30),
+    [selectedDate, horariosAplican, selectedTreatment],
+  );
+  const cerrado = esCerrado(selectedDate, horariosAplican);
+
+  // Qué días tienen espacio de verdad para ESTE tratamiento. No basta con que
+  // la clínica abra: hoy puede estar abierta y que la ventana ya haya pasado,
+  // o que no quepa un tratamiento de tres horas antes de cerrar.
+  const diasConEspacio = useMemo(
+    () =>
+      dias.map(
+        (d) =>
+          slotsDelDia(d, horariosAplican, selectedTreatment?.durationMin ?? 30, 30).length > 0,
+      ),
+    [dias, horariosAplican, selectedTreatment],
+  );
+
+  // Si el día en pantalla no tiene espacio para este tratamiento, saltamos al
+  // primero que sí. Antes solo saltaba si la clínica estaba cerrada, así que
+  // al elegir un tratamiento por la tarde se quedaba en "ya no quedan horarios".
+  useEffect(() => {
+    if (diasConEspacio[dayIdx]) return;
+    const libre = diasConEspacio.findIndex(Boolean);
+    if (libre >= 0) setDayIdx(libre);
+    // Solo corrige el arranque y los cambios de tratamiento o sucursal; si la
+    // clienta toca a propósito un día sin espacio, se respeta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diasConEspacio]);
+
 
 
   // Solo los tratamientos que se ofrecen en la sucursal elegida. Si un
@@ -232,7 +268,14 @@ export function CitaScreen() {
               }}
               helper={
                 selectedTreatment
-                  ? `Duración aproximada: ${selectedTreatment.durationMin ?? 30} min`
+                  ? [
+                      `Duración: ${duracionTexto(selectedTreatment.durationMin ?? 30)}`,
+                      selectedTreatment.requires === "doctora"
+                        ? RECURSO_LABEL.doctora.toLowerCase()
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
                   : undefined
               }
               empty={fallo ?? "No hay tratamientos en esta sucursal."}
@@ -246,7 +289,7 @@ export function CitaScreen() {
             >
               {dias.map((d, i) => {
                 const on = i === dayIdx;
-                const closed = esCerrado(d, horarios);
+                const closed = !diasConEspacio[i];
                 return (
                   <Pressable
                     key={d.toISOString()}
@@ -267,9 +310,17 @@ export function CitaScreen() {
 
             <Text style={styles.fieldLabel}>Horario</Text>
             {cerrado ? (
-              <Text style={styles.hint}>Cerrado ese día. Elige otra fecha.</Text>
+              <Text style={styles.hint}>
+                {selectedTreatment?.requires === "doctora"
+                  ? "La doctora no atiende ese día en esta sucursal. Elige otra fecha."
+                  : "Cerrado ese día. Elige otra fecha."}
+              </Text>
             ) : slots.length === 0 ? (
-              <Text style={styles.hint}>Ya no quedan horarios ese día.</Text>
+              <Text style={styles.hint}>
+                {(selectedTreatment?.durationMin ?? 30) > 60
+                  ? "Ese día ya no queda un espacio libre del tamaño de este tratamiento."
+                  : "Ya no quedan horarios ese día."}
+              </Text>
             ) : (
               <View style={styles.chipWrap}>
                 {slots.map((h) => {
