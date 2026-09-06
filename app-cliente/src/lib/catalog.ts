@@ -22,6 +22,8 @@ export async function listTreatments(): Promise<Treatment[]> {
         priceNote: d.priceNote as string | undefined,
         durationMin: d.durationMin as number | undefined,
         requires: (d.requires as Treatment["requires"]) ?? "aparato",
+        ventana: (d.ventana as string) || undefined,
+        unidades: typeof d.unidades === "number" ? d.unidades : undefined,
         clinicIds: Array.isArray(d.clinicIds) ? (d.clinicIds as string[]) : [],
         cabins: (d.cabins as Record<string, string>) ?? undefined,
         active: d.active !== false,
@@ -39,7 +41,9 @@ export async function listClinics(): Promise<Clinic[]> {
       name: (d.name as string) ?? "",
       address: d.address as string | undefined,
       phone: d.phone as string | undefined,
+      modo: (d.modo as Clinic["modo"]) ?? "semanal",
       horarios: leerHorarios(d.horarios),
+      visitas: Array.isArray(d.visitas) ? (d.visitas as Clinic["visitas"]) : undefined,
       active: Boolean(d.active),
     };
   });

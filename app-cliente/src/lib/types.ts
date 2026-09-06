@@ -78,13 +78,27 @@ export interface HorariosClinica {
   doctora: Horario[];
 }
 
+// Cómo trabaja una sucursal:
+//   "semanal"   — abre los mismos días cada semana (Morelia, Pátzcuaro).
+//   "porVisita" — solo se atiende en fechas puntuales (Uruapan, una vez al
+//                 mes). Sin fechas cargadas no se puede agendar ahí, que es
+//                 más honesto que ofrecer horarios inventados.
+export type ModoClinica = "semanal" | "porVisita";
+
+export interface VisitaClinica {
+  fecha: string; // "2026-09-20"
+  h: string; // "10:00 – 18:00"
+}
+
 // Clínica (multi-clínica ligero). Los aparatos/citas se etiquetan con su id.
 export interface Clinic {
   id: string;
   name: string;
   address?: string;
   phone?: string;
+  modo?: ModoClinica; // por defecto "semanal"
   horarios?: HorariosClinica;
+  visitas?: VisitaClinica[];
   active: boolean;
 }
 
@@ -99,6 +113,12 @@ export interface Treatment {
   priceNote?: string; // ej. "por unidad"
   durationMin?: number;
   requires?: RecursoTratamiento; // por defecto "aparato"
+  // Ventana propia del tratamiento, más estrecha que la del recurso.
+  // Ej. el endolifting corporal solo se agenda de 14:00 a 18:00.
+  ventana?: string;
+  // Cuántos equipos hay de este tratamiento. Define a cuántas clientas se
+  // puede atender a la vez; hoy solo se registra (ver nota en CitaScreen).
+  unidades?: number;
   clinicIds: string[];
   cabins?: Record<string, string>; // clinicId → "Cabina 4"
   active: boolean;

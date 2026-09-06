@@ -29,7 +29,7 @@ export function horarioDe(date: Date, horarios: Horario[]): Horario | null {
 }
 
 // "10:00 – 19:00" → { desde: 600, hasta: 1140 } en minutos. null si cerrado.
-function rango(h: string): { desde: number; hasta: number } | null {
+export function rango(h: string): { desde: number; hasta: number } | null {
   const m = h.match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);
   if (!m) return null;
   const desde = Number(m[1]) * 60 + Number(m[2]);
@@ -50,10 +50,15 @@ export function slotsDelDia(
   horarios: Horario[],
   duracionMin = 30,
   pasoMin = 30,
+  // Ventana propia del tratamiento: se cruza con la del día, nunca la amplía.
+  ventana?: string,
 ): string[] {
   const h = horarioDe(date, horarios);
   if (!h) return [];
-  const r = rango(h.h);
+  const base = rango(h.h);
+  if (!base) return [];
+
+  const r = ventana ? cruzar(base, rango(ventana)) : base;
   if (!r) return [];
 
   const hoy = new Date();
@@ -141,4 +146,45 @@ export function horariosDe(
   if (!h) return general;
   const lista = recurso === "doctora" ? h.doctora : h.aparato;
   return Array.isArray(lista) && lista.length > 0 ? lista : general;
+}
+
+
+// Intersección de dos rangos de minutos. null si no se tocan.
+export function cruzar(
+  a: { desde: number; hasta: number },
+  b: { desde: number; hasta: number } | null,
+): { desde: number; hasta: number } | null {
+  if (!b) return a;
+  const desde = Math.max(a.desde, b.desde);
+  const hasta = Math.min(a.hasta, b.hasta);
+  return hasta > desde ? { desde, hasta } : null;
+}
+
+// Sucursales que solo se visitan en fechas puntuales: el horario del día sale
+// de la lista de visitas, no del calendario semanal.
+export function horarioDeVisita(
+  date: Date,
+  visitas: { fecha: string; h: string }[] | undefined,
+): Horario | null {
+  if (!visitas?.length) return null;
+  const clave = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+  const v = visitas.find((x) => x.fecha === clave);
+  return v ? { dia: clave, h: v.h } : null;
+}
+
+// Espacios de un día en una sucursal por visita.
+export function slotsDeVisita(
+  date: Date,
+  visitas: { fecha: string; h: string }[] | undefined,
+  duracionMin = 30,
+  pasoMin = 30,
+  ventana?: string,
+): string[] {
+  const h = horarioDeVisita(date, visitas);
+  if (!h) return [];
+  // Reutiliza la misma lógica pasando ese único día como su propio horario.
+  const DIAS_NOMBRE = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  return slotsDelDia(date, [{ dia: DIAS_NOMBRE[date.getDay()], h: h.h }], duracionMin, pasoMin, ventana);
 }

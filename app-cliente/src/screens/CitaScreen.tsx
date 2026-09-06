@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   esCerrado,
   fechaConSlot,
   horariosDe,
+  slotsDeVisita,
   type Horario,
 } from "@/lib/schedule";
 import { RECURSO_LABEL } from "@/lib/types";
@@ -120,23 +121,32 @@ export function CitaScreen() {
     [selectedClinic, selectedTreatment, horarios],
   );
 
-  // Espacios de 30 min que caben completos dentro de la ventana del recurso.
-  const slots = useMemo(
-    () => slotsDelDia(selectedDate, horariosAplican, selectedTreatment?.durationMin ?? 30, 30),
-    [selectedDate, horariosAplican, selectedTreatment],
+  const porVisita = selectedClinic?.modo === "porVisita";
+
+  // Espacios de 30 min que caben completos en la ventana que aplica ese día.
+  const espaciosDe = useCallback(
+    (d: Date) => {
+      const dur = selectedTreatment?.durationMin ?? 30;
+      const ventana = selectedTreatment?.ventana;
+      return porVisita
+        ? slotsDeVisita(d, selectedClinic?.visitas, dur, 30, ventana)
+        : slotsDelDia(d, horariosAplican, dur, 30, ventana);
+    },
+    [porVisita, selectedClinic, horariosAplican, selectedTreatment],
   );
-  const cerrado = esCerrado(selectedDate, horariosAplican);
+
+  const slots = useMemo(() => espaciosDe(selectedDate), [espaciosDe, selectedDate]);
+  const cerrado = porVisita
+    ? !selectedClinic?.visitas?.length ||
+      slotsDeVisita(selectedDate, selectedClinic?.visitas, 1, 30).length === 0
+    : esCerrado(selectedDate, horariosAplican);
 
   // Qué días tienen espacio de verdad para ESTE tratamiento. No basta con que
   // la clínica abra: hoy puede estar abierta y que la ventana ya haya pasado,
   // o que no quepa un tratamiento de tres horas antes de cerrar.
   const diasConEspacio = useMemo(
-    () =>
-      dias.map(
-        (d) =>
-          slotsDelDia(d, horariosAplican, selectedTreatment?.durationMin ?? 30, 30).length > 0,
-      ),
-    [dias, horariosAplican, selectedTreatment],
+    () => dias.map((d) => espaciosDe(d).length > 0),
+    [dias, espaciosDe],
   );
 
   // Si el día en pantalla no tiene espacio para este tratamiento, saltamos al
@@ -273,6 +283,9 @@ export function CitaScreen() {
                       selectedTreatment.requires === "doctora"
                         ? RECURSO_LABEL.doctora.toLowerCase()
                         : null,
+                      selectedTreatment.ventana
+                        ? `solo de ${selectedTreatment.ventana}`
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")
@@ -311,15 +324,21 @@ export function CitaScreen() {
             <Text style={styles.fieldLabel}>Horario</Text>
             {cerrado ? (
               <Text style={styles.hint}>
-                {selectedTreatment?.requires === "doctora"
-                  ? "La doctora no atiende ese día en esta sucursal. Elige otra fecha."
-                  : "Cerrado ese día. Elige otra fecha."}
+                {porVisita
+                  ? selectedClinic?.visitas?.length
+                    ? "Esta sucursal solo atiende en fechas puntuales. Elige uno de los días marcados."
+                    : "Todavía no hay fechas de visita cargadas para esta sucursal. Pregunta en la clínica."
+                  : selectedTreatment?.requires === "doctora"
+                    ? "La doctora no atiende ese día en esta sucursal. Elige otra fecha."
+                    : "Cerrado ese día. Elige otra fecha."}
               </Text>
             ) : slots.length === 0 ? (
               <Text style={styles.hint}>
-                {(selectedTreatment?.durationMin ?? 30) > 60
-                  ? "Ese día ya no queda un espacio libre del tamaño de este tratamiento."
-                  : "Ya no quedan horarios ese día."}
+                {selectedTreatment?.ventana
+                  ? `Este tratamiento solo se agenda de ${selectedTreatment.ventana}, y ese horario ya pasó.`
+                  : (selectedTreatment?.durationMin ?? 30) > 60
+                    ? "Ese día ya no queda un espacio libre del tamaño de este tratamiento."
+                    : "Ya no quedan horarios ese día."}
               </Text>
             ) : (
               <View style={styles.chipWrap}>

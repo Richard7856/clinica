@@ -40,6 +40,8 @@ const VACIO = {
   priceNote: "",
   durationMin: "30",
   requires: "aparato" as Treatment["requires"],
+  ventana: "",
+  unidades: "1",
   clinicIds: [] as string[],
 };
 
@@ -109,6 +111,8 @@ export function TreatmentsAdminScreen() {
       priceNote: t.priceNote ?? "",
       durationMin: String(t.durationMin ?? 30),
       requires: t.requires ?? "aparato",
+      ventana: t.ventana ?? "",
+      unidades: String(t.unidades ?? 1),
       clinicIds: [...t.clinicIds],
     });
     setErrors({});
@@ -137,6 +141,8 @@ export function TreatmentsAdminScreen() {
       price: Number(form.price),
       durationMin: Number(form.durationMin),
       requires: form.requires,
+      ventana: form.ventana.trim() || undefined,
+      unidades: Number(form.unidades) > 0 ? Number(form.unidades) : 1,
       clinicIds: form.clinicIds,
       ...(form.priceMax.trim() ? { priceMax: Number(form.priceMax) } : {}),
       ...(form.priceNote.trim() ? { priceNote: form.priceNote.trim() } : {}),
@@ -365,6 +371,23 @@ export function TreatmentsAdminScreen() {
           value={form.requires ?? "aparato"}
           onChange={(v) => set("requires", (v as Treatment["requires"]) ?? "aparato")}
           helper="La doctora y los aparatos tienen horarios distintos en cada sucursal."
+        />
+
+        <Field
+          label="Solo en este horario"
+          value={form.ventana}
+          onChangeText={(t) => set("ventana", t)}
+          placeholder="Ej. 14:00 – 18:00"
+          helper="Déjalo vacío si se puede agendar en todo el horario de la sucursal."
+        />
+
+        <Field
+          label="Equipos disponibles"
+          value={form.unidades}
+          onChangeText={(t) => set("unidades", t)}
+          placeholder="1"
+          keyboardType="numeric"
+          helper="Cuántas clientas se pueden atender a la vez con este tratamiento."
         />
 
         <MultiSelect

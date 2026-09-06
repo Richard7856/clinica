@@ -5,11 +5,12 @@ import { ScreenHeader, Card, EmptyState, Loader, useBack } from "@/components/ui
 import { RowActions } from "@/components/ui/Controls";
 import { FormModal } from "@/components/ui/FormModal";
 import { Field } from "@/components/form/Field";
-import { HorarioEditor, horarioCompleto } from "@/components/form/HorarioEditor";
+import { Select } from "@/components/form/Select";
+import { HorarioEditor, horarioCompleto, VisitasEditor } from "@/components/form/HorarioEditor";
 import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { texto, esValido, type Errors } from "@/lib/validate";
 import { colors, spacing, font, fonts } from "@/theme";
-import type { Clinic, Horario } from "@/lib/types";
+import type { Clinic, Horario, ModoClinica, VisitaClinica } from "@/lib/types";
 
 type Campo = "name";
 const VACIO = { name: "", address: "", phone: "" };
@@ -30,6 +31,8 @@ export function ClinicsAdminScreen() {
   const [form, setForm] = useState(VACIO);
   const [horAparato, setHorAparato] = useState<Horario[]>(horarioCompleto(undefined));
   const [horDoctora, setHorDoctora] = useState<Horario[]>(horarioCompleto(undefined));
+  const [modo, setModo] = useState<ModoClinica>("semanal");
+  const [visitas, setVisitas] = useState<VisitaClinica[]>([]);
   const [errors, setErrors] = useState<Errors<Campo>>({});
   const [saving, setSaving] = useState(false);
   const toast = useToast();
@@ -60,6 +63,8 @@ export function ClinicsAdminScreen() {
     );
     setHorAparato(horarioCompleto(c === "nueva" ? undefined : c.horarios?.aparato));
     setHorDoctora(horarioCompleto(c === "nueva" ? undefined : c.horarios?.doctora));
+    setModo(c === "nueva" ? "semanal" : c.modo ?? "semanal");
+    setVisitas(c === "nueva" ? [] : [...(c.visitas ?? [])]);
   }
 
   async function onSubmit() {
@@ -73,7 +78,17 @@ export function ClinicsAdminScreen() {
         name: form.name.trim(),
         address: form.address.trim(),
         phone: form.phone.trim(),
-        horarios: { aparato: limpiar(horAparato), doctora: limpiar(horDoctora) },
+        modo,
+        // Solo se guarda lo que aplica al modo elegido, para que no queden dos
+        // calendarios contradictorios en el mismo documento.
+        horarios:
+          modo === "semanal"
+            ? { aparato: limpiar(horAparato), doctora: limpiar(horDoctora) }
+            : undefined,
+        visitas:
+          modo === "porVisita"
+            ? visitas.filter((v) => /^\d{4}-\d{2}-\d{2}$/.test(v.fecha.trim()))
+            : [],
       };
       if (editing === "nueva") await createClinic(datos);
       else if (editing) await updateClinic(editing.id, datos);
@@ -118,7 +133,14 @@ export function ClinicsAdminScreen() {
         <Text style={styles.title}>{item.name}</Text>
         {item.address ? <Text style={styles.meta}>{item.address}</Text> : null}
         {item.phone ? <Text style={styles.meta}>{item.phone}</Text> : null}
-        {item.horarios ? (
+        {item.modo === "porVisita" ? (
+          <Text style={styles.horario}>
+            Por visita ·{" "}
+            {item.visitas?.length
+              ? `${item.visitas.length} ${item.visitas.length === 1 ? "fecha cargada" : "fechas cargadas"}`
+              : "sin fechas cargadas"}
+          </Text>
+        ) : item.horarios ? (
           <Text style={styles.horario}>
             Aparatos: {resumen(item.horarios.aparato)} · Doctora:{" "}
             {resumen(item.horarios.doctora)}
@@ -188,6 +210,22 @@ export function ClinicsAdminScreen() {
           keyboardType="phone-pad"
         />
 
+        <Select
+          label="Cómo atiende"
+          required
+          options={[
+            { value: "semanal", label: "Semana fija" },
+            { value: "porVisita", label: "Por visita" },
+          ]}
+          value={modo}
+          onChange={(v) => setModo((v as ModoClinica) ?? "semanal")}
+          helper="«Por visita» es para sedes que se atienden solo en fechas puntuales."
+        />
+
+        {modo === "porVisita" ? (
+          <VisitasEditor value={visitas} onChange={setVisitas} />
+        ) : (
+          <>
         <HorarioEditor
           label="Horario de aparatos"
           helper="Cuándo se pueden agendar los tratamientos de aparatología. Deja el día vacío si no se atiende."
@@ -200,6 +238,8 @@ export function ClinicsAdminScreen() {
           value={horDoctora}
           onChange={setHorDoctora}
         />
+          </>
+        )}
       </FormModal>
     </View>
   );
