@@ -64,6 +64,13 @@ service cloud.firestore {
       // fue un `allow update` abierto, cualquiera podía asignarse Cisnes
       // desde su teléfono.
       allow update: if isAdmin() || isReception()
+                    // El colaborador asigna Cisnes al escanear el QR de una
+                    // visita: eso escribe en la ficha. Solo puede mover el
+                    // saldo, no bloquear ni dar acceso a la tienda.
+                    || (isStaff()
+                        && request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasOnly(['points', 'updatedAt']))
                     || (ownsPatientDoc()
                         && request.resource.data.diff(resource.data)
                              .affectedKeys()
