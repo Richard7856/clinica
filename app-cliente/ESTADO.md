@@ -93,8 +93,17 @@ IAM "Cloud Datastore User" en la cuenta de servicio.
   deshabilita la cuenta en Firebase Auth (eso necesitaría backend).
 - **Endpoints temporales aún desplegados** (gated por CRON_SECRET, quitar en
   prod): `/api/admin/seed`, `/api/admin/preview-email`.
-- **Pago:** simulado (sin pasarela real). Stripe cableado en `lib/checkout.ts`
-  + `/api/checkout` + webhook, pero desactivado a favor de `lib/purchase.simulatePurchase`.
+- **Pago en Tienda:** Stripe **Payment Links en modo de prueba** (cuenta de
+  Stripe de Richard, "Tripdrive · Entorno de prueba"). Cada `storeProducts/{id}`
+  trae `stripePaymentLink`; "Pagar con tarjeta" abre la liga con
+  `client_reference_id=<patientId>` y Stripe regresa a
+  `lecrobelle-app.vercel.app/?pago=ok`. Tarjeta de prueba `4242 4242 4242 4242`.
+  Lo que FALTA para producción: cuenta de Stripe de la clínica, y conectar el
+  webhook (`/api/stripe/webhook` en la web Next.js) para registrar el pago en
+  `payments` y sumar Cisnes solos; ese código existe pero apunta a la colección
+  vieja `products` y al modelo de puntos anterior — hay que actualizarlo y
+  configurar `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` en Vercel.
+  `lib/checkout.ts` y `lib/purchase.ts` quedan como referencia, sin uso.
 - `src/screens/ShopScreen.tsx` quedó huérfano (servicios) tras rediseñar tabs.
 
 ## Cómo probar la demo (flujo estrella)

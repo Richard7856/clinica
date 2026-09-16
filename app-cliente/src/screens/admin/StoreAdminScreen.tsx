@@ -132,6 +132,9 @@ export function StoreAdminScreen() {
                   color={agotado ? colors.danger : colors.ok}
                 />
               ) : null}
+              {item.stripePaymentLink ? (
+                <Pill label="Pago en línea" color={colors.goldDeep} />
+              ) : null}
             </View>
             {item.description ? (
               <Text style={styles.desc}>{item.description}</Text>

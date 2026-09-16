@@ -6,8 +6,11 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Alert,
+  Linking,
+  Platform,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
@@ -20,6 +23,8 @@ export function StoreScreen() {
   const storeEnabled = patient?.storeEnabled ?? false;
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   // Carga los productos físicos activos de la tienda.
   useEffect(() => {
@@ -38,6 +43,7 @@ export function StoreScreen() {
             price: typeof d.price === "number" ? d.price : 0,
             stock: typeof d.stock === "number" ? d.stock : undefined,
             imageUrl: d.imageUrl as string | undefined,
+            stripePaymentLink: (d.stripePaymentLink as string) || undefined,
             active: Boolean(d.active),
           };
         });
@@ -53,26 +59,49 @@ export function StoreScreen() {
     };
   }, []);
 
-  function onBuy(product: StoreProduct) {
-    const priceLabel = `$${product.price.toLocaleString("es-MX")}`;
-    Alert.alert(
-      "Compra de demostración",
-      `¿Comprar ${product.name} por ${priceLabel}? (No se cobra nada.)`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Comprar",
-          style: "default",
-          onPress: () => {
-            // TODO: pago real + registro de pedido
-            Alert.alert(
-              "¡Compra simulada!",
-              "Te contactaremos para la entrega.",
-            );
-          },
-        },
-      ],
-    );
+  // Al volver de Stripe (…/?pago=ok) confirmamos aquí mismo. En web la liga
+  // regresa a esta URL; en la app nativa se abre en el navegador seguro.
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const params = new URLSearchParams(window.location.search);
+    const estado = params.get("pago");
+    if (!estado) return;
+    if (estado === "ok") toast.success("¡Pago recibido! Te contactaremos para la entrega.");
+    else toast.info("El pago no se completó. Puedes intentarlo de nuevo.");
+    // Limpia la URL para que un refresh no repita el aviso.
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [toast]);
+
+  async function onBuy(product: StoreProduct) {
+    if (!product.stripePaymentLink) {
+      toast.info("Este producto aún no tiene pago en línea. Pregunta en la clínica.");
+      return;
+    }
+    const ok = await confirm({
+      title: "Pagar con tarjeta",
+      message: `${product.name} · $${product.price.toLocaleString("es-MX")}. Se abre la página de pago segura de Stripe.`,
+      confirmText: "Ir a pagar",
+    });
+    if (!ok) return;
+
+    // client_reference_id deja rastro de quién pagó, para el registro
+    // automático cuando el webhook esté conectado.
+    const url = new URL(product.stripePaymentLink);
+    if (patient?.id) url.searchParams.set("client_reference_id", patient.id);
+    if (patient?.email) url.searchParams.set("prefilled_email", patient.email);
+
+    try {
+      if (Platform.OS === "web") {
+        // Misma pestaña: Stripe regresa a la app con ?pago=ok al terminar.
+        window.location.assign(url.toString());
+      } else {
+        await WebBrowser.openBrowserAsync(url.toString());
+      }
+    } catch {
+      Linking.openURL(url.toString()).catch(() =>
+        toast.error("No se pudo abrir la página de pago."),
+      );
+    }
   }
 
   function renderItem({ item }: { item: StoreProduct }) {
@@ -108,7 +137,7 @@ export function StoreScreen() {
             disabled={agotado}
           >
             <Text style={agotado ? styles.buyTextOff : styles.buyText}>
-              {agotado ? "Agotado" : "Comprar"}
+              {agotado ? "Agotado" : item.stripePaymentLink ? "Pagar con tarjeta" : "Comprar"}
             </Text>
           </Pressable>
         </View>

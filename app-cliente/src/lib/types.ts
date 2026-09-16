@@ -53,6 +53,9 @@ export interface StoreProduct {
   price: number; // MXN
   stock?: number;
   imageUrl?: string;
+  // Liga de Stripe Payment Link. Si existe, "Comprar" abre el pago real
+  // (en modo de prueba mientras la clínica no tenga su propia cuenta).
+  stripePaymentLink?: string;
   active: boolean;
 }
 

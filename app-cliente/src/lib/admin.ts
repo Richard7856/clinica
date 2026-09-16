@@ -198,6 +198,7 @@ export async function listStoreProducts(): Promise<StoreProduct[]> {
       price: typeof x.price === "number" ? x.price : 0,
       stock: typeof x.stock === "number" ? x.stock : undefined,
       imageUrl: x.imageUrl as string | undefined,
+      stripePaymentLink: (x.stripePaymentLink as string) || undefined,
       active: Boolean(x.active),
     };
   });
