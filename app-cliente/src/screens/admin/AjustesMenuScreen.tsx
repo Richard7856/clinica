@@ -14,6 +14,7 @@ export function AjustesMenuScreen({ navigation }: Props) {
     { key: "Usuarios", label: "Usuarios", desc: "Restringir acceso y habilitar tienda" },
     { key: "Aparatos", label: "Aparatos", desc: "Equipos, clínica y horarios" },
     { key: "Recompensas", label: "Recompensas", desc: "Catálogo canjeable por Cisnes" },
+    { key: "Canjes", label: "Canjes", desc: "Entregar lo que las clientas apartaron" },
     { key: "Clinicas", label: "Clínicas", desc: "Tus sucursales" },
     { key: "ConfigPuntos", label: "Configuración de puntos", desc: "Cuántos Cisnes por gasto" },
   ];

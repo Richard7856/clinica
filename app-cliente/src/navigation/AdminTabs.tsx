@@ -8,6 +8,7 @@ import { DevicesAdminScreen } from "@/screens/admin/DevicesAdminScreen";
 import { AppointmentsAdminScreen } from "@/screens/admin/AppointmentsAdminScreen";
 import { AppointmentDetailScreen } from "@/screens/admin/AppointmentDetailScreen";
 import { RewardsAdminScreen } from "@/screens/admin/RewardsAdminScreen";
+import { RedemptionsAdminScreen } from "@/screens/admin/RedemptionsAdminScreen";
 import { StoreAdminScreen } from "@/screens/admin/StoreAdminScreen";
 import { ClinicsAdminScreen } from "@/screens/admin/ClinicsAdminScreen";
 import { TreatmentsAdminScreen } from "@/screens/admin/TreatmentsAdminScreen";
@@ -24,6 +25,7 @@ export type AjustesStackParams = {
   Tratamientos: undefined;
   Aparatos: undefined;
   Recompensas: undefined;
+  Canjes: undefined;
   Clinicas: undefined;
   Usuarios: undefined;
   ConfigPuntos: undefined;
@@ -64,6 +66,7 @@ function AjustesNavigator() {
       <AjustesStack.Screen name="Tratamientos" component={TreatmentsAdminScreen} />
       <AjustesStack.Screen name="Aparatos" component={DevicesAdminScreen} />
       <AjustesStack.Screen name="Recompensas" component={RewardsAdminScreen} />
+      <AjustesStack.Screen name="Canjes" component={RedemptionsAdminScreen} />
       <AjustesStack.Screen name="Clinicas" component={ClinicsAdminScreen} />
       <AjustesStack.Screen name="Usuarios" component={UsersAdminScreen} />
       <AjustesStack.Screen name="ConfigPuntos" component={PointsConfigScreen} />

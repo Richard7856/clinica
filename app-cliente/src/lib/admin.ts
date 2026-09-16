@@ -1,6 +1,8 @@
 import {
   collection,
   getDocs,
+  runTransaction,
+  increment,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -414,6 +416,89 @@ export async function updateRewardItem(
 
 export async function deleteRewardItem(id: string): Promise<void> {
   await deleteDoc(doc(db, "rewardItems", id));
+}
+
+// ── Canjes de recompensas ───────────────────────────────────────────────────
+// El cliente aparta el canje desde la app y la clínica lo entrega aquí. Los
+// Cisnes se descuentan al ENTREGAR, no al pedirlo: así el cliente no pierde
+// puntos por un canje que nunca recogió, y el saldo solo lo mueve la clínica.
+
+export interface Redemption {
+  id: string;
+  patientId: string;
+  rewardItemId?: string;
+  title: string;
+  cost: number;
+  code: string;
+  status: string; // pending | honored | cancelled
+  date: string;
+}
+
+export async function listRedemptions(): Promise<Redemption[]> {
+  const snap = await getDocs(collection(db, "redemptions"));
+  return snap.docs
+    .map((d) => {
+      const x = d.data();
+      return {
+        id: d.id,
+        patientId: (x.patientId as string) ?? "",
+        rewardItemId: x.rewardItemId as string | undefined,
+        title: (x.title as string) ?? "Recompensa",
+        cost: typeof x.cost === "number" ? x.cost : 0,
+        code: (x.code as string) ?? "",
+        status: (x.status as string) ?? "pending",
+        date: normalizeDate(x.date),
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// Entrega del canje: descuenta los Cisnes y deja el movimiento en el ledger,
+// todo en una transacción para que no se descuente dos veces si alguien toca
+// el botón dos veces o lo atienden dos personas a la vez.
+export async function honorRedemption(id: string): Promise<{ saldo: number }> {
+  const redRef = doc(db, "redemptions", id);
+  const rewardRef = doc(collection(db, "rewards"));
+
+  return runTransaction(db, async (tx) => {
+    const redSnap = await tx.get(redRef);
+    if (!redSnap.exists()) throw new Error("El canje ya no existe");
+    const red = redSnap.data();
+    if (red.status !== "pending") throw new Error("Este canje ya se procesó");
+
+    const patRef = doc(db, "patients", red.patientId as string);
+    const patSnap = await tx.get(patRef);
+    if (!patSnap.exists()) throw new Error("La clienta no tiene ficha");
+
+    const saldo = typeof patSnap.data().points === "number" ? patSnap.data().points : 0;
+    const costo = typeof red.cost === "number" ? red.cost : 0;
+    if (saldo < costo) throw new Error(`Cisnes insuficientes: tiene ${saldo} y cuesta ${costo}`);
+
+    tx.update(patRef, { points: increment(-costo), updatedAt: serverTimestamp() });
+    tx.set(rewardRef, {
+      patientId: red.patientId,
+      type: "redeemed",
+      points: costo,
+      reason: `Canje: ${red.title}`,
+      refId: id,
+      date: new Date().toISOString(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    tx.update(redRef, {
+      status: "honored",
+      honoredAt: new Date().toISOString(),
+      updatedAt: serverTimestamp(),
+    });
+    return { saldo: saldo - costo };
+  });
+}
+
+export async function cancelRedemption(id: string): Promise<void> {
+  await updateDoc(doc(db, "redemptions", id), {
+    status: "cancelled",
+    updatedAt: serverTimestamp(),
+  });
 }
 
 // ── Usuarios (pacientes): restringir + acceso a tienda ──────────────────────

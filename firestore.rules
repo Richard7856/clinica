@@ -46,10 +46,28 @@ service cloud.firestore {
 
     // ── Pacientes ───────────────────────────────────────────────────────────
     match /patients/{patientId} {
-      // Staff ve todo; el cliente ve/edita solo su propia ficha (match correo).
+      // Staff ve todo; el cliente ve solo su propia ficha (match por correo).
       allow read: if isStaff() || ownsPatientDoc();
-      allow create: if isAdmin() || isReception();
-      allow update: if isAdmin() || isReception() || ownsPatientDoc();
+
+      // El cliente crea su ficha al registrarse, con saldo en cero y sin
+      // privilegios. Antes solo la clínica podía crearla, así que quien se
+      // registraba desde la app quedaba sin ficha y no podía ni agendar.
+      allow create: if isAdmin() || isReception()
+                    || (isSignedIn()
+                        && request.resource.data.email == email()
+                        && request.resource.data.points == 0
+                        && request.resource.data.banned == false
+                        && request.resource.data.storeEnabled == false);
+
+      // El cliente solo edita sus datos de contacto. `points`, `banned`,
+      // `storeEnabled` y el propio correo son de la clínica: mientras esto
+      // fue un `allow update` abierto, cualquiera podía asignarse Cisnes
+      // desde su teléfono.
+      allow update: if isAdmin() || isReception()
+                    || (ownsPatientDoc()
+                        && request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasOnly(['fullName', 'phone', 'updatedAt']));
       allow delete: if isAdmin();
 
       match /history/{entryId} {
@@ -131,14 +149,23 @@ service cloud.firestore {
     // ── Movimientos de puntos: el cliente lee/crea los suyos ─────────────────
     match /rewards/{id} {
       allow read: if isStaff() || ownsPatient(resource.data.patientId);
-      allow create: if isStaff() || ownsPatient(request.resource.data.patientId);
+      // Los movimientos de Cisnes los escribe la clínica: al escanear el QR
+      // de una visita o al entregar un canje. El cliente solo los lee.
+      allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
 
     // ── Canjes: el cliente crea el suyo; el staff lo marca como honrado ──────
     match /redemptions/{id} {
       allow read: if isStaff() || ownsPatient(resource.data.patientId);
-      allow create: if isStaff() || ownsPatient(request.resource.data.patientId);
+      // El cliente aparta su canje, pero nace "pendiente" y con el costo REAL
+      // del catálogo: si pudiera escribir el costo, se llevaría gratis lo caro.
+      // Los Cisnes se descuentan cuando la clínica lo entrega, no al pedirlo.
+      allow create: if isStaff()
+                    || (ownsPatient(request.resource.data.patientId)
+                        && request.resource.data.status == 'pending'
+                        && request.resource.data.cost ==
+                           get(/databases/$(database)/documents/rewardItems/$(request.resource.data.rewardItemId)).data.cost);
       allow update: if isStaff();
       allow delete: if isAdmin();
     }

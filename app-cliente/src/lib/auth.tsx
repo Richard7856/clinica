@@ -5,11 +5,11 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { Alert } from "react-native";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut as fbSignOut,
   type User,
 } from "firebase/auth";
@@ -21,6 +21,8 @@ import {
   getDocs,
   doc,
   getDoc,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { Patient } from "./types";
@@ -52,7 +54,8 @@ interface AuthState {
   patient: Patient | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshPatient: () => Promise<void>;
 }
@@ -114,7 +117,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const p = await findPatientByEmail(u.email);
       // Usuario restringido por el admin: se le niega el acceso.
       if (p?.banned) {
-        Alert.alert("Cuenta restringida", "Tu acceso fue suspendido. Contacta a la clínica.");
+        // Sin diálogo: en web no se ve. El cierre de sesión es la señal, y
+        // LoginScreen no puede mostrar un toast desde aquí (aún no está montado).
         await fbSignOut(auth);
         setPatient(null);
         return;
@@ -160,9 +164,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn: async (email, password) => {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     },
-    signUp: async (email, password) => {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
+    // Registrarse creaba la cuenta pero no la ficha, así que la clienta nueva
+    // entraba a un "aún no encontramos tu ficha" y no podía agendar hasta que
+    // alguien la diera de alta a mano. Ahora la ficha nace con ella.
+    signUp: async (email, password, fullName) => {
+      const correo = email.toLowerCase().trim();
+      await createUserWithEmailAndPassword(auth, correo, password);
+
+      // Si la clínica ya la tenía registrada con ese correo, se reusa esa
+      // ficha (con sus Cisnes) en vez de crear una duplicada.
+      const existente = await findPatientByEmail(correo);
+      if (existente) return;
+
+      await addDoc(collection(db, "patients"), {
+        fullName: fullName.trim(),
+        email: correo,
+        phone: "",
+        points: 0,
+        banned: false,
+        storeEnabled: false,
+        qrSlug: correo,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     },
+    // Recuperar contraseña: Firebase manda el correo con la liga de cambio.
+    resetPassword: async (email) => {
+      await sendPasswordResetEmail(auth, email.toLowerCase().trim());
+    },
+
     signOut: async () => {
       await fbSignOut(auth);
     },

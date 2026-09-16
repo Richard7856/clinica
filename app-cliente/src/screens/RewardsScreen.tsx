@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Alert,
 } from "react-native";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { redeemReward } from "@/lib/rewards";
+import { useToast, useConfirm } from "@/components/ui/UIProvider";
 import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import type { RewardItem } from "@/lib/types";
@@ -27,6 +27,9 @@ export function RewardsScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const toast = useToast();
+  const confirmar = useConfirm();
+  const [apartado, setApartado] = useState<{ code: string; title: string; cost: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -58,43 +61,28 @@ export function RewardsScreen() {
     };
   }, []);
 
-  function onRedeem(item: RewardItem) {
+  async function onRedeem(item: RewardItem) {
     if (!patient) {
-      Alert.alert(
-        "Sin ficha",
-        "No encontramos tu ficha en la clínica. Pide que registren tu correo.",
-      );
+      toast.error("No encontramos tu ficha. Pide en la clínica que registren tu correo.");
       return;
     }
-    Alert.alert(
-      "Canjear recompensa",
-      `¿Canjear "${item.title}" por ${item.cost} Cisnes?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Canjear",
-          style: "default",
-          onPress: async () => {
-            setRedeemingId(item.id);
-            try {
-              const { code } = await redeemReward(patient.id, item);
-              await refreshPatient();
-              Alert.alert(
-                "¡Canjeado!",
-                `Muestra este código en recepción para reclamar tu recompensa:\n\n${code}`,
-              );
-            } catch (e) {
-              Alert.alert(
-                "No se pudo canjear",
-                e instanceof Error ? e.message : "Intenta de nuevo.",
-              );
-            } finally {
-              setRedeemingId(null);
-            }
-          },
-        },
-      ],
-    );
+    const ok = await confirmar({
+      title: "Apartar recompensa",
+      message: `«${item.title}» por ${item.cost} Cisnes. Se descuentan cuando la recojas en la clínica, no ahora.`,
+      confirmText: "Apartar",
+    });
+    if (!ok) return;
+
+    setRedeemingId(item.id);
+    try {
+      const { code } = await redeemReward(patient.id, item);
+      await refreshPatient();
+      setApartado({ code, title: item.title, cost: item.cost });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo apartar. Intenta de nuevo.");
+    } finally {
+      setRedeemingId(null);
+    }
   }
 
   function renderItem({ item }: { item: RewardItem }) {
@@ -127,12 +115,39 @@ export function RewardsScreen() {
             ]}
             onPress={() => onRedeem(item)}
             disabled={!canRedeem || busy}
+            accessibilityRole="button"
           >
             <Text style={canRedeem ? styles.redeemText : styles.redeemTextDisabled}>
               {busy ? "Canjeando…" : canRedeem ? "Canjear" : `Faltan ${faltan}`}
             </Text>
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  // Confirmación del canje: el código hay que poder leerlo con calma en
+  // recepción, así que se queda en pantalla hasta que la clienta lo cierre.
+  if (apartado) {
+    return (
+      <View style={[styles.root, styles.apartado]}>
+        <Swan size={44} color={colors.goldDeep} />
+        <Text style={styles.apartadoTitulo}>Recompensa apartada</Text>
+        <Text style={styles.apartadoNombre}>{apartado.title}</Text>
+        <View style={styles.codigoCaja}>
+          <Text style={styles.codigoLbl}>MUESTRA ESTE CÓDIGO</Text>
+          <Text style={styles.codigoText}>{apartado.code}</Text>
+        </View>
+        <Text style={styles.apartadoNota}>
+          Tus {apartado.cost} Cisnes se descuentan cuando te la entreguen en la clínica.
+        </Text>
+        <Pressable
+          onPress={() => setApartado(null)}
+          style={({ pressed }) => [styles.cerrar, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.cerrarText}>Entendido</Text>
+        </Pressable>
       </View>
     );
   }
@@ -200,6 +215,36 @@ export function RewardsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cream },
+  apartado: { alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.sm },
+  apartadoTitulo: { fontSize: font.size.xl + 4, fontFamily: fonts.displayRegular, color: colors.ink, marginTop: spacing.md },
+  apartadoNombre: { fontSize: font.size.md, color: colors.subtleOnCard, fontFamily: fonts.regular, textAlign: "center" },
+  codigoCaja: {
+    backgroundColor: colors.ground,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    alignItems: "center",
+    marginTop: spacing.lg,
+  },
+  codigoLbl: { fontSize: 10, letterSpacing: 1.6, color: colors.goldSoft, fontFamily: fonts.bold },
+  codigoText: { fontSize: 36, letterSpacing: 4, color: colors.cream, fontFamily: fonts.bold, marginTop: 4 },
+  apartadoNota: {
+    fontSize: font.size.sm,
+    color: colors.muted,
+    fontFamily: fonts.regular,
+    textAlign: "center",
+    marginTop: spacing.lg,
+    lineHeight: 19,
+    maxWidth: 290,
+  },
+  cerrar: {
+    backgroundColor: colors.gold,
+    borderRadius: radius.md,
+    paddingVertical: 13,
+    paddingHorizontal: spacing.xxl,
+    marginTop: spacing.xl,
+  },
+  cerrarText: { color: "#231b06", fontFamily: fonts.bold, fontSize: font.size.md },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,

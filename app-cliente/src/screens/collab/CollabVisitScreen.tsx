@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Alert,
   ScrollView,
 } from "react-native";
 import {
@@ -14,6 +13,7 @@ import {
   type BarcodeScanningResult,
 } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useToast } from "@/components/ui/UIProvider";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import { awardVisitPoints } from "@/lib/collaborator";
@@ -33,6 +33,7 @@ function formatTime(iso: string): string {
 }
 
 export function CollabVisitScreen({ route, navigation }: Props) {
+  const toast = useToast();
   const { visit } = route.params;
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -57,18 +58,7 @@ export function CollabVisitScreen({ route, navigation }: Props) {
         setVerified(true);
         setScanning(false);
       } else {
-        Alert.alert(
-          "QR incorrecto",
-          "El QR no corresponde a esta cita.",
-          [
-            {
-              text: "Reintentar",
-              onPress: () => {
-                scanLock.current = false; // rearma el escaneo
-              },
-            },
-          ],
-        );
+        toast.error("El QR no corresponde a esta cita.");
       }
     },
     [visit.id],
@@ -82,19 +72,18 @@ export function CollabVisitScreen({ route, navigation }: Props) {
   async function onAward() {
     const monto = Number(amount.replace(",", "."));
     if (!Number.isFinite(monto) || monto <= 0) {
-      Alert.alert("Monto inválido", "Escribe el monto gastado (mayor a 0).");
+      toast.error("Escribe el monto gastado (mayor a 0).");
       return;
     }
     setSaving(true);
     try {
       const { earned } = await awardVisitPoints(visit.id, monto);
-      Alert.alert("Listo", `¡${earned} Cisnes asignados!`, [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      toast.success(`¡${earned} Cisnes asignados!`);
+      navigation.goBack();
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "No se pudieron asignar los Cisnes.";
-      Alert.alert("Error", msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from "react-native";
@@ -14,6 +13,7 @@ import {
   useCameraPermissions,
   type BarcodeScanningResult,
 } from "expo-camera";
+import { useToast } from "@/components/ui/UIProvider";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import { Swan } from "@/components/Swan";
 import { lookupAppointment, awardVisitPoints } from "@/lib/collaborator";
@@ -39,6 +39,7 @@ function formatDate(iso: string): string {
 }
 
 export function ScannerScreen() {
+  const toast = useToast();
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<Phase>("scanning");
   const [visit, setVisit] = useState<ScannedVisit | null>(null);
@@ -73,14 +74,9 @@ export function ScannerScreen() {
         setPhase("found");
       } catch (e) {
         const msg = e instanceof Error ? e.message : "No se pudo leer la cita.";
-        Alert.alert("QR no válido", msg, [
-          {
-            text: "Reintentar",
-            onPress: () => {
-              scanLock.current = false; // rearma el escaneo
-            },
-          },
-        ]);
+        toast.error(msg);
+        // Sin diálogo que cerrar, el escáner se rearma solo.
+        setTimeout(() => { scanLock.current = false; }, 1500);
       } finally {
         setLoading(false);
       }
@@ -92,7 +88,7 @@ export function ScannerScreen() {
     if (!visit) return;
     const monto = Number(amount.replace(",", "."));
     if (!Number.isFinite(monto) || monto <= 0) {
-      Alert.alert("Monto inválido", "Escribe el monto gastado (mayor a 0).");
+      toast.error("Escribe el monto gastado (mayor a 0).");
       return;
     }
     setSaving(true);
@@ -102,7 +98,7 @@ export function ScannerScreen() {
       setPhase("done");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "No se pudieron asignar los Cisnes.";
-      Alert.alert("Error", msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

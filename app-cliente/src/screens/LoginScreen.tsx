@@ -7,37 +7,56 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { Swan } from "@/components/Swan";
 import { colors, spacing, radius, font, fonts } from "@/theme";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/components/ui/UIProvider";
 
 export function LoginScreen() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function submit() {
-    if (!email.includes("@") || password.length < 6) {
-      Alert.alert("Datos incompletos", "Revisa tu correo y una contraseña de al menos 6 caracteres.");
-      return;
-    }
+    if (!email.includes("@")) return toast.error("Escribe un correo válido.");
+    if (password.length < 6)
+      return toast.error("La contraseña debe tener al menos 6 caracteres.");
+    if (mode === "up" && fullName.trim().length < 3)
+      return toast.error("Escribe tu nombre completo.");
+
     setBusy(true);
     try {
       if (mode === "in") await signIn(email, password);
-      else await signUp(email, password);
-    } catch (e) {
-      Alert.alert(
-        "No se pudo continuar",
+      else await signUp(email, password, fullName);
+    } catch {
+      toast.error(
         mode === "in"
           ? "Correo o contraseña incorrectos."
           : "No se pudo crear la cuenta. ¿Ya existe ese correo?",
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Recuperar contraseña. Se responde igual exista o no la cuenta, para no
+  // revelar qué correos están registrados.
+  async function onReset() {
+    if (!email.includes("@"))
+      return toast.error("Escribe tu correo y vuelve a tocar «Olvidé mi contraseña».");
+    setBusy(true);
+    try {
+      await resetPassword(email);
+    } catch {
+      // se ignora a propósito
+    } finally {
+      setBusy(false);
+      toast.success("Si ese correo tiene cuenta, te llegaron las instrucciones.");
     }
   }
 
@@ -51,6 +70,16 @@ export function LoginScreen() {
         <Text style={styles.wordmark}>L'ECROBELLE</Text>
         <Text style={styles.tagline}>Belleza a tu alcance.</Text>
 
+        {mode === "up" ? (
+          <TextInput
+            style={styles.field}
+            placeholder="Nombre completo"
+            placeholderTextColor="#a49d8f"
+            autoCapitalize="words"
+            value={fullName}
+            onChangeText={setFullName}
+          />
+        ) : null}
         <TextInput
           style={styles.field}
           placeholder="Correo electrónico"
@@ -86,12 +115,24 @@ export function LoginScreen() {
               : "¿Ya tienes cuenta? Inicia sesión"}
           </Text>
         </Pressable>
+
+        {mode === "in" ? (
+          <Pressable onPress={onReset} disabled={busy} hitSlop={8}>
+            <Text style={styles.olvide}>Olvidé mi contraseña</Text>
+          </Pressable>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  olvide: {
+    marginTop: spacing.md,
+    fontSize: font.size.sm,
+    color: colors.muted,
+    fontFamily: fonts.semibold,
+  },
   root: { flex: 1, backgroundColor: colors.cream },
   inner: {
     flex: 1,
